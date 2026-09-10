@@ -1,29 +1,32 @@
 import { useState } from "react"
 import { Zap, TrendingDown, PieChart, Shield, ArrowRight } from "lucide-react"
+import { login, setToken, type AuthUser } from "../lib/api"
 
 interface Props {
-  onLogin: (email: string) => void
+  onLogin: (user: AuthUser) => void
   onRegister: () => void
 }
-
-// Credenciais de demonstração até a API de autenticação existir.
-const DEMO_EMAIL = "admin@email.com"
-const DEMO_PASSWORD = "admin123"
 
 export default function Login({ onLogin, onRegister }: Props) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email.trim().toLowerCase() !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
-      setError("E-mail ou senha inválidos.")
-      return
-    }
     setError("")
-    onLogin(DEMO_EMAIL)
+    setLoading(true)
+    try {
+      const { token, user } = await login(email.trim(), password)
+      setToken(token)
+      onLogin(user)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "E-mail ou senha inválidos.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -138,9 +141,10 @@ export default function Login({ onLogin, onRegister }: Props) {
 
             <button
               type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-2 group"
+              disabled={loading}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-2 group disabled:opacity-60"
             >
-              Entrar
+              {loading ? "Entrando..." : "Entrar"}
               <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
             </button>
           </form>

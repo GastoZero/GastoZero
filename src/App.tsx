@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import type { Page, StoredSubscription, Subscription, UserProfile } from "./types"
 import { enrichSubscription, toISODate } from "./lib/format"
 import { clearStoredState, usePersistentState } from "./lib/storage"
+import { clearToken } from "./lib/api"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import Dashboard from "./pages/Dashboard"
@@ -55,16 +56,16 @@ export default function App() {
   if (!isLoggedIn) {
     return authPage === "login" ? (
       <Login
-        onLogin={email => {
-          if (email) setProfile(p => ({ ...p, email }))
+        onLogin={user => {
+          setProfile({ name: user.name, email: user.email })
           setIsLoggedIn(true)
         }}
         onRegister={() => setAuthPage("register")}
       />
     ) : (
       <Register
-        onRegister={(name, email) => {
-          setProfile({ name: name || DEFAULT_PROFILE.name, email: email || DEFAULT_PROFILE.email })
+        onRegister={user => {
+          setProfile({ name: user.name, email: user.email })
           setIsLoggedIn(true)
         }}
         onLogin={() => setAuthPage("login")}
@@ -107,6 +108,7 @@ export default function App() {
         onSaveProfile={setProfile}
         onLogout={() => {
           clearStoredState()
+          clearToken()
           setProfile(DEFAULT_PROFILE)
           setStored(seedSubscriptions())
           setIsLoggedIn(false)

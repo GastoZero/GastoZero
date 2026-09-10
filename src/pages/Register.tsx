@@ -1,19 +1,21 @@
 import { useState } from "react"
 import { Zap, ArrowRight, ArrowLeft } from "lucide-react"
+import { register, setToken, type AuthUser } from "../lib/api"
 
 interface Props {
-  onRegister: (name: string, email: string) => void
+  onRegister: (user: AuthUser) => void
   onLogin: () => void
 }
 
 export default function Register({ onRegister, onLogin }: Props) {
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" })
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (form.name.trim().length < 2) {
       setError("Informe seu nome.")
@@ -32,7 +34,16 @@ export default function Register({ onRegister, onLogin }: Props) {
       return
     }
     setError("")
-    onRegister(form.name.trim(), form.email.trim())
+    setLoading(true)
+    try {
+      const { token, user } = await register(form.name.trim(), form.email.trim(), form.password)
+      setToken(token)
+      onRegister(user)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível criar a conta.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -105,9 +116,10 @@ export default function Register({ onRegister, onLogin }: Props) {
 
           <button
             type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-2 group mt-2"
+            disabled={loading}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-2 group mt-2 disabled:opacity-60"
           >
-            Criar minha conta
+            {loading ? "Criando conta..." : "Criar minha conta"}
             <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
           </button>
         </form>
