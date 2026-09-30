@@ -1,43 +1,40 @@
-import {
-  LayoutDashboard,
-  CreditCard,
-  Grid3X3,
-  Calculator,
-  Bell,
-  Settings,
-} from "lucide-react"
 import type { Page } from "../types"
+import { NAV_ITEMS, navSection } from "./nav"
 
 interface Props {
   currentPage: Page
   navigate: (p: Page) => void
+  alertCount: number
 }
 
-const navItems: { label: string; page: Page; icon: typeof LayoutDashboard }[] = [
-  { label: "Início", page: "dashboard", icon: LayoutDashboard },
-  { label: "Assinaturas", page: "subscriptions", icon: CreditCard },
-  { label: "Catálogo", page: "catalog", icon: Grid3X3 },
-  { label: "Simulador", page: "simulator", icon: Calculator },
-  { label: "Alertas", page: "alerts", icon: Bell },
-  { label: "Config.", page: "settings", icon: Settings },
-]
+export default function BottomNav({ currentPage, navigate, alertCount }: Props) {
+  const section = navSection(currentPage)
 
-export default function BottomNav({ currentPage, navigate }: Props) {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-30 safe-b">
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur border-t border-line z-30"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
       <div className="flex">
-        {navItems.map(({ label, page, icon: Icon }) => {
-          const active = currentPage === page
+        {NAV_ITEMS.map(({ short, page, icon: Icon }) => {
+          const active = section === page
           return (
             <button
               key={page}
               onClick={() => navigate(page)}
-              className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors cursor-pointer ${
-                active ? "text-green-600" : "text-slate-400"
+              aria-current={active ? "page" : undefined}
+              className={`relative flex-1 flex flex-col items-center gap-1 pt-2.5 pb-2 text-[10.5px] font-medium transition-colors cursor-pointer ${
+                active ? "text-ink" : "text-muted"
               }`}
             >
-              <Icon size={20} className={active ? "text-green-600" : "text-slate-400"} />
-              {label}
+              {active && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-b bg-brand" />}
+              <span className="relative">
+                <Icon size={20} strokeWidth={active ? 2.2 : 1.8} className={active ? "text-brand" : ""} />
+                {page === "alerts" && alertCount > 0 && (
+                  <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-danger ring-2 ring-surface" />
+                )}
+              </span>
+              {short}
             </button>
           )
         })}

@@ -103,9 +103,10 @@ em uma API REST.
 # 1. Instalar dependências
 npm install
 
-# 2. Rodar em modo desenvolvimento
-npm run dev          # http://localhost:5173
-```
+```bash
+# 2. Rodar o 
+cd server
+npm run dev:all
 
 Outros comandos:
 

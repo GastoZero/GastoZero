@@ -1,7 +1,9 @@
 import { useState } from "react"
-import { Search, Plus, MoreVertical, PauseCircle, PlayCircle, XCircle } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Pause, Play, Trash2, ArrowUpRight } from "lucide-react"
 import type { Page, StoredSubscription, Subscription } from "../types"
 import { billingLabel, cycleLabel, formatCurrency } from "../lib/format"
+import PageHeader from "../components/PageHeader"
+import ServiceMark from "../components/ServiceMark"
 
 interface Props {
   subscriptions: Subscription[]
@@ -10,75 +12,65 @@ interface Props {
   navigate: (p: Page) => void
 }
 
-const CATEGORIES = ["Todas", "Streaming", "Música", "Cloud", "Academia", "Telefonia", "Software", "Games"]
-
 export default function Subscriptions({ subscriptions, update, remove, navigate }: Props) {
   const [search, setSearch] = useState("")
   const [activeCategory, setActiveCategory] = useState("Todas")
   const [openMenu, setOpenMenu] = useState<number | null>(null)
   const [confirmCancel, setConfirmCancel] = useState<number | null>(null)
 
-  const filtered = subscriptions.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(search.trim().toLowerCase())
-    const matchCat = activeCategory === "Todas" || s.category === activeCategory
-    return matchSearch && matchCat
-  })
+  const categories = ["Todas", ...Array.from(new Set(subscriptions.map(s => s.category))).sort()]
+
+  const filtered = subscriptions
+    .filter(s => {
+      const matchSearch = s.name.toLowerCase().includes(search.trim().toLowerCase())
+      const matchCat = activeCategory === "Todas" || s.category === activeCategory
+      return matchSearch && matchCat
+    })
+    .sort((a, b) => (a.status === b.status ? a.daysUntil - b.daysUntil : a.status === "active" ? -1 : 1))
 
   const active = subscriptions.filter(s => s.status === "active")
   const monthlyTotal = active.reduce((sum, s) => sum + s.monthlyPrice, 0)
-  const annualTotal = monthlyTotal * 12
   const fmt = formatCurrency
+  const toCancel = subscriptions.find(s => s.id === confirmCancel)
 
   return (
-    <div className="min-h-full pb-20 md:pb-6">
-      <header className="bg-white border-b border-slate-200 px-4 md:px-8 py-5 sticky top-0 z-10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">Minhas Assinaturas</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Gerencie todos os seus serviços recorrentes em um só lugar.</p>
-          </div>
-          <button
-            onClick={() => navigate("catalog")}
-            className="flex-shrink-0 flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
-          >
-            <Plus size={16} />
-            Adicionar
+    <div className="min-h-full pb-24 md:pb-10">
+      <PageHeader
+        eyebrow="Gestão"
+        title="Assinaturas"
+        description="Tudo o que é cobrado de você todo mês ou todo ano, em um lugar só."
+        actions={
+          <button onClick={() => navigate("catalog")} className="btn-primary">
+            <Plus size={16} strokeWidth={2.4} />
+            Nova assinatura
           </button>
+        }
+      />
+
+      <div className="px-4 md:px-10 space-y-5">
+        <div className="card grid grid-cols-3 divide-x divide-line">
+          <Stat label="Ativas" value={String(active.length)} />
+          <Stat label="Por mês" value={fmt(monthlyTotal)} strong />
+          <Stat label="Por ano" value={fmt(monthlyTotal * 12)} />
         </div>
 
-        {/* Stats row */}
-        <div className="flex gap-4 mt-4 pt-4 border-t border-slate-100">
-          <Stat label="Assinaturas ativas" value={`${active.length}`} />
-          <div className="w-px bg-slate-200" />
-          <Stat label="Total mensal" value={fmt(monthlyTotal)} highlight />
-          <div className="w-px bg-slate-200" />
-          <Stat label="Total anual" value={fmt(annualTotal)} />
-        </div>
-      </header>
-
-      <div className="px-4 md:px-8 py-5 space-y-4">
-        {/* Search + filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+          <div className="relative lg:w-72">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar assinatura..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+              placeholder="Buscar pelo nome"
+              className="input pl-10"
             />
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {CATEGORIES.map(cat => (
+          <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0">
+            {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-3 py-2 rounded-lg text-xs font-medium transition whitespace-nowrap ${
-                  activeCategory === cat
-                    ? "bg-green-600 text-white"
-                    : "bg-white border border-slate-200 text-slate-600 hover:border-green-300"
-                }`}
+                className={activeCategory === cat ? "chip-on" : "chip-off"}
               >
                 {cat}
               </button>
@@ -86,139 +78,163 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
           </div>
         </div>
 
-        {/* Subscription cards */}
-        <div className="space-y-3">
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-slate-400 text-sm">
-              Nenhuma assinatura encontrada.
+        {subscriptions.length === 0 ? (
+          <div className="card border-dashed p-10 text-center">
+            <p className="font-display text-lg font-semibold text-ink">Nenhuma assinatura ainda</p>
+            <p className="text-sm text-muted mt-1 mb-5">Comece escolhendo um serviço do catálogo: o preço já vem preenchido.</p>
+            <button onClick={() => navigate("catalog")} className="btn-primary">
+              Explorar catálogo <ArrowUpRight size={15} />
+            </button>
+          </div>
+        ) : (
+          <div className="card overflow-visible">
+            <div className="hidden md:grid grid-cols-[minmax(0,1fr)_140px_150px_130px_40px] gap-4 px-5 py-3 border-b border-line eyebrow">
+              <span>Serviço</span>
+              <span>Categoria</span>
+              <span>Próxima cobrança</span>
+              <span className="text-right">Valor</span>
+              <span />
             </div>
-          )}
-          {filtered.map(sub => (
-            <div key={sub.id} className="bg-white rounded-2xl border border-slate-200 p-4 hover:shadow-sm transition-shadow">
-              <div className="flex items-center gap-4">
-                <span className="text-2xl flex-shrink-0">{sub.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold text-slate-800">{sub.name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{sub.plan}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          sub.status === "active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-amber-100 text-amber-700"
-                        }`}
-                      >
-                        {sub.status === "active" ? "Ativa" : "Pausada"}
-                      </span>
-                      <div className="relative">
-                        <button
-                          onClick={() => setOpenMenu(openMenu === sub.id ? null : sub.id)}
-                          className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 transition"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-                        {openMenu === sub.id && (
-                          <div className="absolute right-0 top-10 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1 w-40">
-                            <MenuBtn
-                              icon={sub.status === "active" ? <PauseCircle size={13} /> : <PlayCircle size={13} />}
-                              label={sub.status === "active" ? "Pausar" : "Retomar"}
-                              onClick={() => {
-                                update(sub.id, { status: sub.status === "active" ? "paused" : "active" })
-                                setOpenMenu(null)
-                              }}
-                            />
-                            <MenuBtn
-                              icon={<XCircle size={13} />}
-                              label="Cancelar"
-                              danger
-                              onClick={() => {
-                                setConfirmCancel(sub.id)
-                                setOpenMenu(null)
-                              }}
-                            />
-                          </div>
-                        )}
+
+            {filtered.length === 0 && (
+              <p className="text-center py-12 text-muted text-sm">Nada encontrado com esses filtros.</p>
+            )}
+
+            <ul className="divide-y divide-line">
+              {filtered.map(sub => {
+                const paused = sub.status !== "active"
+                const dueTone = paused
+                  ? "text-muted"
+                  : sub.daysUntil <= 1
+                    ? "text-danger font-semibold"
+                    : sub.daysUntil <= 3
+                      ? "text-warn font-semibold"
+                      : "text-ink-2"
+                return (
+                  <li
+                    key={sub.id}
+                    className={`grid grid-cols-[minmax(0,1fr)_auto_40px] md:grid-cols-[minmax(0,1fr)_140px_150px_130px_40px] gap-x-4 gap-y-1 items-center px-4 md:px-5 py-3.5 ${
+                      paused ? "opacity-60" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ServiceMark name={sub.name} color={sub.color} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-ink truncate">{sub.name}</p>
+                        <p className="text-xs text-muted truncate">
+                          {sub.plan}
+                          {paused && <span className="ml-1.5 text-warn font-semibold">· Pausada</span>}
+                        </p>
+                        <p className={`md:hidden text-xs mt-0.5 ${dueTone}`}>
+                          {paused ? "Cobrança pausada" : `${sub.nextBillingLabel} · ${billingLabel(sub.daysUntil).toLowerCase()}`}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm font-bold text-slate-800">
-                      {fmt(sub.price)}
-                      <span className="text-xs text-slate-400 font-normal">{cycleLabel(sub.cycle)}</span>
-                      {sub.cycle === "yearly" && (
-                        <span className="text-xs text-slate-400 font-normal"> · {fmt(sub.monthlyPrice)}/mês</span>
+
+                    <span className="hidden md:block text-sm text-ink-2">{sub.category}</span>
+
+                    <span className={`hidden md:block text-sm ${dueTone}`}>
+                      {paused ? (
+                        "Pausada"
+                      ) : (
+                        <>
+                          <span className="num">{sub.nextBillingLabel}</span>
+                          <span className="text-xs ml-1.5 opacity-80">{billingLabel(sub.daysUntil).toLowerCase()}</span>
+                        </>
                       )}
                     </span>
-                    <span
-                      className={`text-xs ${
-                        sub.status !== "active"
-                          ? "text-slate-400"
-                          : sub.daysUntil <= 1
-                          ? "text-red-500 font-medium"
-                          : sub.daysUntil <= 3
-                          ? "text-amber-500 font-medium"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {sub.status === "active"
-                        ? `Próxima cobrança: ${sub.nextBillingLabel} (${billingLabel(sub.daysUntil).toLowerCase()})`
-                        : "Cobrança pausada"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+
+                    <div className="text-right">
+                      <p className="num font-semibold text-ink">
+                        {fmt(sub.price)}
+                        <span className="text-xs text-muted font-normal">{cycleLabel(sub.cycle)}</span>
+                      </p>
+                      {sub.cycle === "yearly" && (
+                        <p className="num text-[11px] text-muted">{fmt(sub.monthlyPrice)}/mês</p>
+                      )}
+                    </div>
+
+                    <div className="relative justify-self-end">
+                      <button
+                        onClick={() => setOpenMenu(openMenu === sub.id ? null : sub.id)}
+                        aria-label={`Ações de ${sub.name}`}
+                        className="w-8 h-8 rounded-lg hover:bg-sunken flex items-center justify-center text-muted hover:text-ink transition-colors cursor-pointer"
+                      >
+                        <MoreHorizontal size={17} />
+                      </button>
+                      {openMenu === sub.id && (
+                        <div className="absolute right-0 top-9 card shadow-xl shadow-black/10 z-20 p-1 w-44">
+                          <MenuBtn
+                            icon={paused ? <Play size={14} /> : <Pause size={14} />}
+                            label={paused ? "Retomar" : "Pausar"}
+                            onClick={() => {
+                              update(sub.id, { status: paused ? "active" : "paused" })
+                              setOpenMenu(null)
+                            }}
+                          />
+                          <MenuBtn
+                            icon={<Trash2 size={14} />}
+                            label="Remover"
+                            danger
+                            onClick={() => {
+                              setConfirmCancel(sub.id)
+                              setOpenMenu(null)
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+
+            <button
+              onClick={() => navigate("catalog")}
+              className="w-full flex items-center justify-center gap-2 py-3.5 border-t border-line text-sm font-semibold text-brand hover:bg-sunken transition-colors rounded-b-xl cursor-pointer"
+            >
+              <Plus size={15} strokeWidth={2.4} />
+              Adicionar do catálogo
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Cancel confirm modal */}
-      {confirmCancel !== null && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="font-bold text-slate-800 text-lg mb-2">Cancelar assinatura</h3>
-            <p className="text-slate-500 text-sm mb-6">
-              Tem certeza que deseja remover{" "}
-              <strong>{subscriptions.find(s => s.id === confirmCancel)?.name}</strong>?
-              Esta ação não pode ser desfeita.
+      {toCancel && (
+        <div className="modal-backdrop">
+          <div className="card p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="font-bold text-ink text-xl mb-2">Remover {toCancel.name}?</h3>
+            <p className="text-muted text-sm mb-6">
+              Ela sai da sua lista e dos cálculos. Isso não cancela o serviço junto à empresa.
             </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmCancel(null)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition"
-              >
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmCancel(null)} className="btn-secondary flex-1">
                 Voltar
               </button>
               <button
                 onClick={() => {
-                  remove(confirmCancel)
+                  remove(toCancel.id)
                   setConfirmCancel(null)
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition"
+                className="btn-danger flex-1"
               >
-                Cancelar
+                Remover
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* close menu on outside click */}
-      {openMenu !== null && (
-        <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />
-      )}
+      {openMenu !== null && <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />}
     </div>
   )
 }
 
-function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Stat({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div>
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className={`text-sm font-bold mt-0.5 ${highlight ? "text-red-600" : "text-slate-800"}`}>{value}</p>
+    <div className="px-4 md:px-6 py-4">
+      <p className="eyebrow">{label}</p>
+      <p className={`num mt-1.5 text-base md:text-xl font-semibold ${strong ? "text-brand" : "text-ink"}`}>{value}</p>
     </div>
   )
 }
@@ -237,7 +253,9 @@ function MenuBtn({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 transition ${danger ? "text-red-600" : "text-slate-700"}`}
+      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm hover:bg-sunken transition-colors cursor-pointer ${
+        danger ? "text-danger" : "text-ink"
+      }`}
     >
       {icon}
       {label}

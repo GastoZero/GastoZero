@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react"
-import type { Page, StoredSubscription, Subscription, UserProfile } from "./types"
+import type { Page, StoredSubscription, Subscription, ThemePreference, UserProfile } from "./types"
 import { enrichSubscription, toISODate } from "./lib/format"
 import { clearStoredState, usePersistentState } from "./lib/storage"
 import { clearToken } from "./lib/api"
+import { useAppliedTheme } from "./lib/theme"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import Dashboard from "./pages/Dashboard"
@@ -23,14 +24,14 @@ function seedSubscriptions(): StoredSubscription[] {
   }
 
   return [
-    { id: 1, name: "Netflix", plan: "Premium", category: "Streaming", price: 59.90, cycle: "monthly", nextBilling: inDays(1), status: "active", icon: "🎬" },
-    { id: 2, name: "Spotify", plan: "Individual", category: "Música", price: 21.90, cycle: "monthly", nextBilling: inDays(8), status: "active", icon: "🎵" },
-    { id: 3, name: "iCloud+", plan: "200 GB", category: "Cloud", price: 10.90, cycle: "monthly", nextBilling: inDays(3), status: "active", icon: "☁️" },
-    { id: 4, name: "Academia", plan: "Mensal", category: "Academia", price: 99.90, cycle: "monthly", nextBilling: inDays(13), status: "active", icon: "💪" },
-    { id: 5, name: "YouTube Premium", plan: "Individual", category: "Streaming", price: 24.90, cycle: "monthly", nextBilling: inDays(18), status: "active", icon: "▶️" },
-    { id: 6, name: "Microsoft 365", plan: "Personal (anual)", category: "Software", price: 379.00, cycle: "yearly", nextBilling: inDays(23), status: "active", icon: "💻" },
-    { id: 7, name: "Amazon Prime", plan: "Mensal", category: "Streaming", price: 19.90, cycle: "monthly", nextBilling: inDays(28), status: "active", icon: "📦" },
-    { id: 8, name: "Plano de celular", plan: "Controle", category: "Telefonia", price: 59.99, cycle: "monthly", nextBilling: inDays(6), status: "active", icon: "📱" },
+    { id: 1, name: "Netflix", plan: "Premium", category: "Streaming", price: 59.90, cycle: "monthly", nextBilling: inDays(1), status: "active" },
+    { id: 2, name: "Spotify", plan: "Individual", category: "Música", price: 21.90, cycle: "monthly", nextBilling: inDays(8), status: "active" },
+    { id: 3, name: "iCloud+", plan: "200 GB", category: "Cloud", price: 10.90, cycle: "monthly", nextBilling: inDays(3), status: "active" },
+    { id: 4, name: "Academia", plan: "Mensal", category: "Academia", price: 99.90, cycle: "monthly", nextBilling: inDays(13), status: "active" },
+    { id: 5, name: "YouTube Premium", plan: "Individual", category: "Streaming", price: 24.90, cycle: "monthly", nextBilling: inDays(18), status: "active" },
+    { id: 6, name: "Microsoft 365", plan: "Personal (anual)", category: "Software", price: 379.00, cycle: "yearly", nextBilling: inDays(23), status: "active" },
+    { id: 7, name: "Amazon Prime", plan: "Mensal", category: "Streaming", price: 19.90, cycle: "monthly", nextBilling: inDays(28), status: "active" },
+    { id: 8, name: "Plano de celular", plan: "Controle", category: "Telefonia", price: 59.99, cycle: "monthly", nextBilling: inDays(6), status: "active" },
   ]
 }
 
@@ -45,6 +46,8 @@ export default function App() {
     "subscriptions",
     seedSubscriptions,
   )
+  const [theme, setTheme] = usePersistentState<ThemePreference>("theme", "system")
+  const isDark = useAppliedTheme(theme)
   const [authPage, setAuthPage] = useState<AuthPage>("login")
   const [page, setPage] = useState<Page>("dashboard")
 
@@ -73,7 +76,10 @@ export default function App() {
     )
   }
 
-  const navigate = (p: Page) => setPage(p)
+  const navigate = (p: Page) => {
+    setPage(p)
+    document.querySelector("main")?.scrollTo({ top: 0 })
+  }
 
   const addSubscription = (sub: Omit<StoredSubscription, "id">) =>
     setStored(prev => [...prev, { ...sub, id: Date.now() }])
@@ -84,7 +90,7 @@ export default function App() {
   const removeSubscription = (id: number) => setStored(prev => prev.filter(s => s.id !== id))
 
   const pages: Record<Page, React.ReactNode> = {
-    dashboard: <Dashboard subscriptions={subscriptions} profile={profile} navigate={navigate} />,
+    dashboard: <Dashboard subscriptions={subscriptions} profile={profile} navigate={navigate} isDark={isDark} />,
     subscriptions: (
       <Subscriptions
         subscriptions={subscriptions}
@@ -106,6 +112,8 @@ export default function App() {
       <Settings
         profile={profile}
         onSaveProfile={setProfile}
+        theme={theme}
+        onThemeChange={setTheme}
         onLogout={() => {
           clearStoredState()
           clearToken()
@@ -122,17 +130,19 @@ export default function App() {
   const upcomingAlerts = subscriptions.filter(s => s.status === "active" && s.daysUntil <= 3).length
 
   return (
-    <div className="flex h-full bg-slate-50 overflow-hidden">
+    <div className="flex h-full bg-canvas overflow-hidden">
       <Sidebar
         currentPage={page}
         navigate={navigate}
         profile={profile}
         alertCount={upcomingAlerts}
+        theme={theme}
+        onThemeChange={setTheme}
       />
       <main className="flex-1 md:ml-64 overflow-y-auto">
         {pages[page]}
       </main>
-      <BottomNav currentPage={page} navigate={navigate} />
+      <BottomNav currentPage={page} navigate={navigate} alertCount={upcomingAlerts} />
     </div>
   )
 }

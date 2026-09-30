@@ -1,7 +1,9 @@
 import { useState } from "react"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Check } from "lucide-react"
 import type { Subscription, Page } from "../types"
 import { formatCurrency } from "../lib/format"
+import PageHeader from "../components/PageHeader"
+import ServiceMark from "../components/ServiceMark"
 
 interface Props {
   subscriptions: Subscription[]
@@ -9,16 +11,14 @@ interface Props {
 }
 
 export default function Simulator({ subscriptions, navigate }: Props) {
-  const active = subscriptions.filter(s => s.status === "active")
+  const active = [...subscriptions.filter(s => s.status === "active")].sort((a, b) => b.monthlyPrice - a.monthlyPrice)
   const [checked, setChecked] = useState<Set<number>>(new Set())
 
   const totalMonthly = active.reduce((sum, s) => sum + s.monthlyPrice, 0)
-  const savingsMonthly = active
-    .filter(s => checked.has(s.id))
-    .reduce((sum, s) => sum + s.monthlyPrice, 0)
+  const savingsMonthly = active.filter(s => checked.has(s.id)).reduce((sum, s) => sum + s.monthlyPrice, 0)
   const afterMonthly = totalMonthly - savingsMonthly
-  const savingsAnnual = savingsMonthly * 12
-  const reductionPct = totalMonthly > 0 ? ((savingsMonthly / totalMonthly) * 100).toFixed(1) : "0"
+  const reductionPct = totalMonthly > 0 ? (savingsMonthly / totalMonthly) * 100 : 0
+  const has = savingsMonthly > 0
 
   const fmt = formatCurrency
 
@@ -30,163 +30,107 @@ export default function Simulator({ subscriptions, navigate }: Props) {
       return next
     })
 
-  const beforePct = 100
-  const afterPct = totalMonthly > 0 ? (afterMonthly / totalMonthly) * 100 : 100
-
   return (
-    <div className="min-h-full pb-20 md:pb-6">
-      <header className="bg-white border-b border-slate-200 px-4 md:px-8 py-5 sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-slate-800">Simulador de Economia</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Descubra quanto você poderia economizar revisando suas assinaturas.</p>
-      </header>
+    <div className="min-h-full pb-24 md:pb-10">
+      <PageHeader
+        eyebrow="E se..."
+        title="Simulador de cortes"
+        description="Marque o que você pausaria ou cancelaria e veja o efeito no mês e no ano."
+      />
 
-      <div className="px-4 md:px-8 py-6 grid md:grid-cols-2 gap-6">
-        {/* Left: subscription checklist */}
-        <div>
-          <p className="text-sm font-semibold text-slate-700 mb-3">
-            Selecione as assinaturas que você considera pausar ou cancelar:
-          </p>
-          <div className="space-y-2">
-            {active.length === 0 && (
-              <p className="text-sm text-slate-400 bg-white border border-slate-200 rounded-xl p-6 text-center">
-                Você ainda não possui assinaturas ativas para simular.
-              </p>
-            )}
-            {active.map(sub => {
-              const isChecked = checked.has(sub.id)
-              return (
-                <label
-                  key={sub.id}
-                  className={`flex items-center gap-4 px-4 py-3.5 rounded-xl border cursor-pointer transition-all ${
-                    isChecked
-                      ? "border-green-400 bg-green-50"
-                      : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => toggle(sub.id)}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-5 h-5 rounded flex items-center justify-center border-2 flex-shrink-0 transition-colors ${
-                      isChecked ? "border-green-600 bg-green-600" : "border-slate-300"
-                    }`}
-                  >
-                    {isChecked && (
-                      <svg viewBox="0 0 10 8" className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 4l3 3 5-6" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-xl">{sub.icon}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-800">{sub.name}</p>
-                    <p className="text-xs text-slate-500">{sub.plan}</p>
-                  </div>
-                  <span className={`text-sm font-bold flex-shrink-0 ${isChecked ? "text-green-600" : "text-slate-700"}`}>
-                    {fmt(sub.monthlyPrice)}<span className="text-xs font-normal text-slate-400">/mês</span>
-                  </span>
-                </label>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Right: results */}
-        <div className="space-y-4">
-          {/* Main savings card */}
-          <div className={`rounded-2xl p-6 transition-all duration-300 ${savingsMonthly > 0 ? "bg-green-600" : "bg-slate-200"}`}>
-            <p className={`text-sm font-medium mb-1 ${savingsMonthly > 0 ? "text-green-100" : "text-slate-500"}`}>
-              Você poderia economizar
+      <div className="px-4 md:px-10 grid lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-3">
+          {active.length === 0 ? (
+            <p className="card border-dashed p-10 text-center text-sm text-muted">
+              Você ainda não tem assinaturas ativas para simular.
             </p>
-            <p className={`text-4xl font-bold mb-1 ${savingsMonthly > 0 ? "text-white" : "text-slate-400"}`}>
-              {fmt(savingsMonthly)}
-              <span className="text-lg font-semibold"> por mês</span>
-            </p>
-            <p className={`text-lg font-semibold ${savingsMonthly > 0 ? "text-green-200" : "text-slate-400"}`}>
-              {fmt(savingsAnnual)} por ano
-            </p>
-            {savingsMonthly === 0 && (
-              <p className="text-slate-500 text-sm mt-2">
-                Selecione assinaturas ao lado para simular.
-              </p>
-            )}
-          </div>
-
-          {/* Comparison */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <h3 className="font-semibold text-slate-800 mb-4">Comparativo</h3>
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="text-slate-600">Gasto atual</span>
-                  <span className="font-bold text-red-600">{fmt(totalMonthly)}/mês</span>
-                </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-red-400 rounded-full transition-all duration-500"
-                    style={{ width: `${beforePct}%` }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="text-slate-600">Após economia</span>
-                  <span className="font-bold text-green-600">{fmt(afterMonthly)}/mês</span>
-                </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(afterPct, 2)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {savingsMonthly > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-100 text-center">
-                <p className="text-slate-600 text-sm">
-                  Isso representa uma redução de{" "}
-                  <span className="font-bold text-green-600">{reductionPct}%</span>{" "}
-                  nos seus gastos recorrentes.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* CTA */}
-          <button
-            onClick={() => navigate("subscriptions")}
-            className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3.5 rounded-xl transition group"
-          >
-            Revisar minhas assinaturas
-            <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
-          </button>
-
-          {/* Savings breakdown */}
-          {checked.size > 0 && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5">
-              <h3 className="font-semibold text-slate-800 mb-3">Assinaturas selecionadas</h3>
-              <div className="space-y-2">
-                {active.filter(s => checked.has(s.id)).map(sub => (
-                  <div key={sub.id} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span>{sub.icon}</span>
-                      <span className="text-slate-700">{sub.name}</span>
-                    </div>
-                    <span className="font-semibold text-green-600">+ {fmt(sub.monthlyPrice)}</span>
-                  </div>
-                ))}
-                <div className="pt-2 border-t border-slate-100 flex justify-between text-sm font-bold">
-                  <span className="text-slate-700">Total economizado/mês</span>
-                  <span className="text-green-700">{fmt(savingsMonthly)}</span>
-                </div>
-              </div>
-            </div>
+          ) : (
+            <ul className="card divide-y divide-line overflow-hidden">
+              {active.map(sub => {
+                const on = checked.has(sub.id)
+                const share = totalMonthly > 0 ? (sub.monthlyPrice / totalMonthly) * 100 : 0
+                return (
+                  <li key={sub.id}>
+                    <label
+                      className={`flex items-center gap-3.5 px-4 py-3.5 cursor-pointer transition-colors ${
+                        on ? "bg-brand-soft" : "hover:bg-sunken/50"
+                      }`}
+                    >
+                      <input type="checkbox" checked={on} onChange={() => toggle(sub.id)} className="sr-only" />
+                      <span
+                        className={`w-5 h-5 rounded-md flex items-center justify-center border-2 flex-shrink-0 transition-colors ${
+                          on ? "border-brand bg-brand" : "border-line-strong"
+                        }`}
+                      >
+                        {on && <Check size={13} strokeWidth={3.5} className="text-on-brand" />}
+                      </span>
+                      <ServiceMark name={sub.name} color={sub.color} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold truncate ${on ? "text-ink line-through decoration-brand decoration-2" : "text-ink"}`}>
+                          {sub.name}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {sub.plan} · <span className="num">{share.toFixed(0)}%</span> do total
+                        </p>
+                      </div>
+                      <span className="num text-sm font-semibold flex-shrink-0 text-ink">
+                        {fmt(sub.monthlyPrice)}
+                        <span className="text-xs font-normal text-muted">/mês</span>
+                      </span>
+                    </label>
+                  </li>
+                )
+              })}
+            </ul>
           )}
         </div>
+
+        <div className="lg:col-span-2 space-y-4 lg:sticky lg:top-6 self-start">
+          <section className="rounded-xl bg-hero text-on-hero p-6">
+            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-hero-muted">
+              Economia no ano
+            </p>
+            <p className={`num text-[2.6rem] font-semibold leading-none mt-3 ${has ? "text-hero-accent" : "text-hero-muted"}`}>
+              {fmt(savingsMonthly * 12)}
+            </p>
+            <p className="text-sm text-hero-muted mt-2">
+              {has ? (
+                <>
+                  <span className="num text-on-hero">{fmt(savingsMonthly)}</span> a menos por mês ·{" "}
+                  <span className="num text-on-hero">{reductionPct.toFixed(1)}%</span> do total
+                </>
+              ) : (
+                "Marque assinaturas na lista para simular."
+              )}
+            </p>
+          </section>
+
+          <section className="card p-5">
+            <h2 className="font-bold text-ink text-lg mb-4">Antes e depois</h2>
+            <Meter label="Hoje" value={fmt(totalMonthly)} pct={100} tone="bg-ink-2" />
+            <div className="h-3" />
+            <Meter label="Com os cortes" value={fmt(afterMonthly)} pct={totalMonthly > 0 ? (afterMonthly / totalMonthly) * 100 : 100} tone="bg-brand" />
+          </section>
+
+          <button onClick={() => navigate("subscriptions")} className="btn-primary w-full py-3 group">
+            Revisar assinaturas
+            <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Meter({ label, value, pct, tone }: { label: string; value: string; pct: number; tone: string }) {
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1.5">
+        <span className="text-ink-2">{label}</span>
+        <span className="num font-semibold text-ink">{value}/mês</span>
+      </div>
+      <div className="h-2 bg-sunken rounded-full overflow-hidden">
+        <div className={`h-full ${tone} rounded-full transition-all duration-500`} style={{ width: `${Math.max(pct, 1.5)}%` }} />
       </div>
     </div>
   )

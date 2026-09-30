@@ -14,7 +14,10 @@ export interface StoredSubscription {
   /** Data da próxima cobrança no formato ISO (YYYY-MM-DD). */
   nextBilling: string
   status: SubscriptionStatus
-  icon: string
+  /** Cor da marca do serviço (hex). Quando ausente, vem do catálogo. */
+  color?: string
+  /** Legado: emoji usado em versões anteriores. Não é mais exibido. */
+  icon?: string
 }
 
 /** Assinatura enriquecida com os campos derivados usados na interface. */
@@ -44,10 +47,11 @@ export interface CatalogService {
   id: number
   name: string
   category: string
-  icon: string
   color: string
   plans: CatalogPlan[]
 }
+
+export type ThemePreference = "light" | "dark" | "system"
 
 export interface UserProfile {
   name: string

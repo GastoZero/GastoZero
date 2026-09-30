@@ -31,7 +31,8 @@ export function usePersistentState<T>(key: string, initial: T | (() => T)) {
 export function clearStoredState() {
   try {
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(PREFIX)) localStorage.removeItem(key)
+      // A preferência de tema é do aparelho, não da conta: sobrevive ao logout.
+      if (key.startsWith(PREFIX) && key !== PREFIX + "theme") localStorage.removeItem(key)
     }
   } catch {
     /* storage indisponível */
