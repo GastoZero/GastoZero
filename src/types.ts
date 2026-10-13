@@ -2,9 +2,9 @@ export type BillingCycle = "monthly" | "yearly"
 
 export type SubscriptionStatus = "active" | "paused"
 
-/** Assinatura como é persistida (localStorage / futura API REST). */
+/** Assinatura como é persistida na API. */
 export interface StoredSubscription {
-  id: number
+  id: string
   name: string
   plan: string
   category: string
@@ -53,7 +53,13 @@ export interface CatalogService {
 
 export type ThemePreference = "light" | "dark" | "system"
 
+export interface NotificationPrefs {
+  billing: boolean
+  renewal: boolean
+}
+
 export interface UserProfile {
   name: string
   email: string
+  notifications: NotificationPrefs
 }

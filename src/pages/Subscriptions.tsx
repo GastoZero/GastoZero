@@ -7,16 +7,16 @@ import ServiceMark from "../components/ServiceMark"
 
 interface Props {
   subscriptions: Subscription[]
-  update: (id: number, u: Partial<StoredSubscription>) => void
-  remove: (id: number) => void
+  update: (id: string, u: Partial<StoredSubscription>) => void
+  remove: (id: string) => void
   navigate: (p: Page) => void
 }
 
 export default function Subscriptions({ subscriptions, update, remove, navigate }: Props) {
   const [search, setSearch] = useState("")
   const [activeCategory, setActiveCategory] = useState("Todas")
-  const [openMenu, setOpenMenu] = useState<number | null>(null)
-  const [confirmCancel, setConfirmCancel] = useState<number | null>(null)
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [confirmCancel, setConfirmCancel] = useState<string | null>(null)
 
   const categories = ["Todas", ...Array.from(new Set(subscriptions.map(s => s.category))).sort()]
 

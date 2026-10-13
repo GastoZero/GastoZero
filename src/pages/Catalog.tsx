@@ -8,7 +8,7 @@ import ServiceMark from "../components/ServiceMark"
 
 interface Props {
   subscriptions: Subscription[]
-  addSubscription: (s: Omit<StoredSubscription, "id">) => void
+  addSubscription: (s: Omit<StoredSubscription, "id">) => Promise<void>
   navigate: (p: Page) => void
 }
 
@@ -22,6 +22,7 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
   const [billingDate, setBillingDate] = useState("")
   const [price, setPrice] = useState("")
   const [success, setSuccess] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -51,21 +52,28 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
     setPrice(selectedService.plans[index].price.toFixed(2))
   }
 
-  const handleAdd = () => {
-    if (!selectedService) return
+  const handleAdd = async () => {
+    if (!selectedService || saving) return
     const plan = selectedService.plans[selectedPlan]
     const parsed = Number(price.replace(",", "."))
 
-    addSubscription({
-      name: selectedService.name,
-      plan: plan.label,
-      category: selectedService.category,
-      price: Number.isFinite(parsed) && parsed > 0 ? parsed : plan.price,
-      cycle: plan.cycle,
-      nextBilling: billingDate || toISODate(addMonths(new Date(), 1)),
-      status: "active",
-      color: selectedService.color,
-    })
+    setSaving(true)
+    try {
+      await addSubscription({
+        name: selectedService.name,
+        plan: plan.label,
+        category: selectedService.category,
+        price: Number.isFinite(parsed) && parsed > 0 ? parsed : plan.price,
+        cycle: plan.cycle,
+        nextBilling: billingDate || toISODate(addMonths(new Date(), 1)),
+        status: "active",
+        color: selectedService.color,
+      })
+    } catch {
+      return // o App já exibe a mensagem de erro
+    } finally {
+      setSaving(false)
+    }
 
     setSuccess(true)
     setTimeout(() => {
@@ -261,8 +269,8 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
                     </div>
                   </div>
 
-                  <button onClick={handleAdd} className="btn-primary w-full py-3">
-                    Adicionar às assinaturas
+                  <button onClick={handleAdd} disabled={saving} className="btn-primary w-full py-3">
+                    {saving ? "Adicionando..." : "Adicionar às assinaturas"}
                   </button>
                 </div>
               </>

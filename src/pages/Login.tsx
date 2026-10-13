@@ -11,7 +11,8 @@ interface Props {
 export default function Login({ onLogin, onRegister }: Props) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [remember, setRemember] = useState(false)
+  const [remember, setRemember] = useState(true)
+  const [forgotOpen, setForgotOpen] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -21,7 +22,7 @@ export default function Login({ onLogin, onRegister }: Props) {
     setLoading(true)
     try {
       const { token, user } = await login(email.trim(), password)
-      setToken(token)
+      setToken(token, remember)
       onLogin(user)
     } catch (err) {
       setError(err instanceof Error ? err.message : "E-mail ou senha inválidos.")
@@ -52,7 +53,12 @@ export default function Login({ onLogin, onRegister }: Props) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="label mb-0">Senha</label>
-                <button type="button" className="text-xs text-brand hover:underline underline-offset-4 font-medium">
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(o => !o)}
+                  aria-expanded={forgotOpen}
+                  className="text-xs text-brand hover:underline underline-offset-4 font-medium"
+                >
                   Esqueci minha senha
                 </button>
               </div>
@@ -63,6 +69,12 @@ export default function Login({ onLogin, onRegister }: Props) {
                 placeholder="••••••••"
                 className="input py-3"
               />
+              {forgotOpen && (
+                <p className="mt-2 text-xs text-muted bg-sunken rounded-lg px-3 py-2.5">
+                  A recuperação de senha por e-mail ainda não está disponível. Se você está logado em
+                  outro aparelho, troque a senha em Configurações → Segurança.
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-2.5">

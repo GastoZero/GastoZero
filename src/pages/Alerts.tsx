@@ -15,7 +15,7 @@ type Tone = "danger" | "warn" | "neutral"
 
 export default function Alerts({ subscriptions, navigate }: Props) {
   const [prefs, setPrefs] = useState({ day1: true, day3: true, day7: false })
-  const [dismissed, setDismissed] = useState<Set<number>>(new Set())
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
   const active = subscriptions
     .filter(s => s.status === "active" && !dismissed.has(s.id))
@@ -29,7 +29,7 @@ export default function Alerts({ subscriptions, navigate }: Props) {
   const hasAny = groups.some(g => g.items.length > 0)
 
   const togglePref = (k: keyof typeof prefs) => setPrefs(p => ({ ...p, [k]: !p[k] }))
-  const dismiss = (id: number) => setDismissed(prev => new Set([...prev, id]))
+  const dismiss = (id: string) => setDismissed(prev => new Set([...prev, id]))
 
   return (
     <div className="min-h-full pb-24 md:pb-10">
@@ -80,7 +80,7 @@ interface AlertGroupProps {
   items: Subscription[]
   tone: Tone
   navigate: (p: Page) => void
-  onDismiss: (id: number) => void
+  onDismiss: (id: string) => void
 }
 
 function AlertGroup({ label, description, items, tone, navigate, onDismiss }: AlertGroupProps) {

@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Page, StoredSubscription, Subscription, ThemePreference, UserProfile } from "./types"
-import { enrichSubscription, toISODate } from "./lib/format"
+import { enrichSubscription } from "./lib/format"
 import { clearStoredState, usePersistentState } from "./lib/storage"
-import { clearToken } from "./lib/api"
+import * as api from "./lib/api"
 import { useAppliedTheme } from "./lib/theme"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
@@ -15,64 +15,92 @@ import Settings from "./pages/Settings"
 import Sidebar from "./components/Sidebar"
 import BottomNav from "./components/BottomNav"
 
-/** Dados de demonstração com vencimentos relativos à data atual. */
-function seedSubscriptions(): StoredSubscription[] {
-  const inDays = (days: number) => {
-    const d = new Date()
-    d.setDate(d.getDate() + days)
-    return toISODate(d)
-  }
-
-  return [
-    { id: 1, name: "Netflix", plan: "Premium", category: "Streaming", price: 59.90, cycle: "monthly", nextBilling: inDays(1), status: "active" },
-    { id: 2, name: "Spotify", plan: "Individual", category: "Música", price: 21.90, cycle: "monthly", nextBilling: inDays(8), status: "active" },
-    { id: 3, name: "iCloud+", plan: "200 GB", category: "Cloud", price: 10.90, cycle: "monthly", nextBilling: inDays(3), status: "active" },
-    { id: 4, name: "Academia", plan: "Mensal", category: "Academia", price: 99.90, cycle: "monthly", nextBilling: inDays(13), status: "active" },
-    { id: 5, name: "YouTube Premium", plan: "Individual", category: "Streaming", price: 24.90, cycle: "monthly", nextBilling: inDays(18), status: "active" },
-    { id: 6, name: "Microsoft 365", plan: "Personal (anual)", category: "Software", price: 379.00, cycle: "yearly", nextBilling: inDays(23), status: "active" },
-    { id: 7, name: "Amazon Prime", plan: "Mensal", category: "Streaming", price: 19.90, cycle: "monthly", nextBilling: inDays(28), status: "active" },
-    { id: 8, name: "Plano de celular", plan: "Controle", category: "Telefonia", price: 59.99, cycle: "monthly", nextBilling: inDays(6), status: "active" },
-  ]
-}
-
-const DEFAULT_PROFILE: UserProfile = { name: "Admin", email: "admin@email.com" }
-
 type AuthPage = "login" | "register"
 
+/** "checking": validando o token salvo · "anon": sem sessão · "error": API inacessível · "ready": logado. */
+type Session = "checking" | "anon" | "error" | "ready"
+
+function toProfile(user: api.AuthUser): UserProfile {
+  return { name: user.name, email: user.email, notifications: user.notifications }
+}
+
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = usePersistentState("auth", false)
-  const [profile, setProfile] = usePersistentState<UserProfile>("profile", DEFAULT_PROFILE)
-  const [stored, setStored] = usePersistentState<StoredSubscription[]>(
-    "subscriptions",
-    seedSubscriptions,
-  )
+  const [session, setSession] = useState<Session>(() => (api.getToken() ? "checking" : "anon"))
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [stored, setStored] = useState<StoredSubscription[]>([])
   const [theme, setTheme] = usePersistentState<ThemePreference>("theme", "system")
   const isDark = useAppliedTheme(theme)
   const [authPage, setAuthPage] = useState<AuthPage>("login")
   const [page, setPage] = useState<Page>("dashboard")
+  const [error, setError] = useState("")
+
+  const logout = useCallback(() => {
+    clearStoredState()
+    api.clearToken()
+    setProfile(null)
+    setStored([])
+    setSession("anon")
+    setAuthPage("login")
+    setPage("dashboard")
+  }, [])
+
+  /** Carrega usuário e assinaturas a partir do token salvo. */
+  const loadSession = useCallback(async () => {
+    setSession("checking")
+    try {
+      const [{ user }, subs] = await Promise.all([api.fetchMe(), api.listSubscriptions()])
+      setProfile(toProfile(user))
+      setStored(subs)
+      setSession("ready")
+    } catch (err) {
+      if (err instanceof api.ApiError && err.status === 401) logout()
+      else setSession("error")
+    }
+  }, [logout])
+
+  useEffect(() => {
+    api.setUnauthorizedHandler(logout)
+    if (api.getToken()) void loadSession()
+    return () => api.setUnauthorizedHandler(null)
+  }, [loadSession, logout])
+
+  useEffect(() => {
+    if (!error) return
+    const t = setTimeout(() => setError(""), 4000)
+    return () => clearTimeout(t)
+  }, [error])
 
   const subscriptions: Subscription[] = useMemo(
     () => stored.map(sub => enrichSubscription(sub)),
     [stored],
   )
 
-  if (!isLoggedIn) {
+  if (session === "checking") {
+    return (
+      <div className="flex h-full items-center justify-center bg-canvas text-muted text-sm">
+        Carregando sua conta...
+      </div>
+    )
+  }
+
+  if (session === "error") {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 bg-canvas px-4 text-center">
+        <p className="text-ink font-semibold">Não foi possível conectar ao servidor.</p>
+        <div className="flex gap-2">
+          <button onClick={() => void loadSession()} className="btn-primary">Tentar novamente</button>
+          <button onClick={logout} className="btn-secondary">Sair</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (session === "anon" || !profile) {
+    const onAuth = () => void loadSession()
     return authPage === "login" ? (
-      <Login
-        onLogin={user => {
-          setProfile({ name: user.name, email: user.email })
-          setIsLoggedIn(true)
-        }}
-        onRegister={() => setAuthPage("register")}
-      />
+      <Login onLogin={onAuth} onRegister={() => setAuthPage("register")} />
     ) : (
-      <Register
-        onRegister={user => {
-          setProfile({ name: user.name, email: user.email })
-          setIsLoggedIn(true)
-        }}
-        onLogin={() => setAuthPage("login")}
-      />
+      <Register onRegister={onAuth} onLogin={() => setAuthPage("login")} />
     )
   }
 
@@ -81,13 +109,47 @@ export default function App() {
     document.querySelector("main")?.scrollTo({ top: 0 })
   }
 
-  const addSubscription = (sub: Omit<StoredSubscription, "id">) =>
-    setStored(prev => [...prev, { ...sub, id: Date.now() }])
+  const fail = (err: unknown) =>
+    setError(err instanceof Error ? err.message : "Não foi possível salvar a alteração.")
 
-  const updateSubscription = (id: number, updates: Partial<StoredSubscription>) =>
+  const addSubscription = async (sub: api.SubscriptionInput) => {
+    try {
+      const created = await api.createSubscription(sub)
+      setStored(prev => [...prev, created])
+    } catch (err) {
+      fail(err)
+      throw err
+    }
+  }
+
+  // Atualização otimista: aplica na tela e desfaz se a API recusar.
+  const updateSubscription = async (id: string, updates: Partial<StoredSubscription>) => {
+    const previous = stored
     setStored(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)))
+    try {
+      const saved = await api.updateSubscription(id, updates)
+      setStored(prev => prev.map(s => (s.id === id ? saved : s)))
+    } catch (err) {
+      setStored(previous)
+      fail(err)
+    }
+  }
 
-  const removeSubscription = (id: number) => setStored(prev => prev.filter(s => s.id !== id))
+  const removeSubscription = async (id: string) => {
+    const previous = stored
+    setStored(prev => prev.filter(s => s.id !== id))
+    try {
+      await api.deleteSubscription(id)
+    } catch (err) {
+      setStored(previous)
+      fail(err)
+    }
+  }
+
+  const saveProfile = async (updates: Partial<UserProfile>) => {
+    const { user } = await api.updateMe(updates)
+    setProfile(toProfile(user))
+  }
 
   const pages: Record<Page, React.ReactNode> = {
     dashboard: <Dashboard subscriptions={subscriptions} profile={profile} navigate={navigate} isDark={isDark} />,
@@ -111,18 +173,10 @@ export default function App() {
     settings: (
       <Settings
         profile={profile}
-        onSaveProfile={setProfile}
+        onSaveProfile={saveProfile}
         theme={theme}
         onThemeChange={setTheme}
-        onLogout={() => {
-          clearStoredState()
-          clearToken()
-          setProfile(DEFAULT_PROFILE)
-          setStored(seedSubscriptions())
-          setIsLoggedIn(false)
-          setAuthPage("login")
-          setPage("dashboard")
-        }}
+        onLogout={logout}
       />
     ),
   }
@@ -143,6 +197,14 @@ export default function App() {
         {pages[page]}
       </main>
       <BottomNav currentPage={page} navigate={navigate} alertCount={upcomingAlerts} />
+      {error && (
+        <div
+          role="alert"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100%-2rem)] text-sm text-danger bg-danger-soft border border-line rounded-lg px-4 py-2.5 shadow-lg"
+        >
+          {error}
+        </div>
+      )}
     </div>
   )
 }

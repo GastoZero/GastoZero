@@ -103,10 +103,15 @@ em uma API REST.
 # 1. Instalar dependências
 npm install
 
-```bash
-# 2. Rodar o 
-cd server
+# 2. Criar o .env na raiz com MONGODB_URI, JWT_SECRET e PORT=3001
+
+# 3. Rodar front (5173) + API (3001) juntos, a partir da raiz do projeto
 npm run dev:all
+```
+
+> ℹ️ Se a API falhar com `querySrv ECONNREFUSED` ao conectar no MongoDB Atlas,
+> o Node não está achando o DNS da rede. O servidor já tenta DNS públicos
+> automaticamente; para usar outros, defina `DNS_SERVERS=8.8.8.8,1.1.1.1` no `.env`.
 
 Outros comandos:
 

@@ -12,7 +12,7 @@ interface Props {
 
 export default function Simulator({ subscriptions, navigate }: Props) {
   const active = [...subscriptions.filter(s => s.status === "active")].sort((a, b) => b.monthlyPrice - a.monthlyPrice)
-  const [checked, setChecked] = useState<Set<number>>(new Set())
+  const [checked, setChecked] = useState<Set<string>>(new Set())
 
   const totalMonthly = active.reduce((sum, s) => sum + s.monthlyPrice, 0)
   const savingsMonthly = active.filter(s => checked.has(s.id)).reduce((sum, s) => sum + s.monthlyPrice, 0)
@@ -22,7 +22,7 @@ export default function Simulator({ subscriptions, navigate }: Props) {
 
   const fmt = formatCurrency
 
-  const toggle = (id: number) =>
+  const toggle = (id: string) =>
     setChecked(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)

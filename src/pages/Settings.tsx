@@ -1,13 +1,14 @@
 import { useState } from "react"
 import { Lock, LogOut, ChevronRight } from "lucide-react"
-import type { ThemePreference, UserProfile } from "../types"
+import type { NotificationPrefs, ThemePreference, UserProfile } from "../types"
+import { changePassword } from "../lib/api"
 import PageHeader from "../components/PageHeader"
 import Switch from "../components/Switch"
 import ThemeSwitch from "../components/ThemeSwitch"
 
 interface Props {
   profile: UserProfile
-  onSaveProfile: (profile: UserProfile) => void
+  onSaveProfile: (updates: Partial<UserProfile>) => Promise<void>
   theme: ThemePreference
   onThemeChange: (t: ThemePreference) => void
   onLogout: () => void
@@ -16,17 +17,37 @@ interface Props {
 export default function Settings({ profile, onSaveProfile, theme, onThemeChange, onLogout }: Props) {
   const [name, setName] = useState(profile.name)
   const [email, setEmail] = useState(profile.email)
-  const [alerts, setAlerts] = useState({ billing: true, renewal: true })
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [profileError, setProfileError] = useState("")
+  const [notifError, setNotifError] = useState("")
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [passwordOpen, setPasswordOpen] = useState(false)
 
-  const toggleAlert = (k: keyof typeof alerts) => setAlerts(a => ({ ...a, [k]: !a[k] }))
-  const dirty = name !== profile.name || email !== profile.email
+  const alerts = profile.notifications
+  const dirty = name.trim() !== profile.name || email.trim().toLowerCase() !== profile.email
 
-  const save = () => {
-    onSaveProfile({ name: name.trim() || profile.name, email: email.trim() || profile.email })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  const toggleAlert = async (k: keyof NotificationPrefs) => {
+    setNotifError("")
+    try {
+      await onSaveProfile({ notifications: { ...alerts, [k]: !alerts[k] } })
+    } catch (err) {
+      setNotifError(err instanceof Error ? err.message : "Não foi possível salvar a preferência.")
+    }
+  }
+
+  const save = async () => {
+    setProfileError("")
+    setSaving(true)
+    try {
+      await onSaveProfile({ name: name.trim() || profile.name, email: email.trim() || profile.email })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      setProfileError(err instanceof Error ? err.message : "Não foi possível salvar o perfil.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -54,8 +75,13 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
               <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="input" />
             </div>
           </div>
-          <button onClick={save} disabled={!dirty && !saved} className="btn-primary mt-4">
-            {saved ? "Salvo" : "Salvar alterações"}
+          {profileError && (
+            <p role="alert" className="mt-3 text-sm text-danger bg-danger-soft rounded-lg px-3 py-2.5">
+              {profileError}
+            </p>
+          )}
+          <button onClick={save} disabled={saving || (!dirty && !saved)} className="btn-primary mt-4">
+            {saving ? "Salvando..." : saved ? "Salvo" : "Salvar alterações"}
           </button>
         </Section>
 
@@ -74,6 +100,11 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
               <Switch checked={alerts.renewal} onChange={() => toggleAlert("renewal")} label="Alertas de renovação" />
             </Row>
           </div>
+          {notifError && (
+            <p role="alert" className="mt-3 text-sm text-danger bg-danger-soft rounded-lg px-3 py-2.5">
+              {notifError}
+            </p>
+          )}
         </Section>
 
         <Section title="Preferências">
@@ -84,7 +115,7 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
 
         <Section title="Segurança">
           <div className="-mx-2">
-            <ActionRow icon={<Lock size={16} />} label="Alterar senha" onClick={() => {}} />
+            <ActionRow icon={<Lock size={16} />} label="Alterar senha" onClick={() => setPasswordOpen(true)} />
             <ActionRow icon={<LogOut size={16} />} label="Sair da conta" danger onClick={() => setConfirmLogout(true)} />
           </div>
         </Section>
@@ -95,7 +126,7 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
           <div className="card p-6 max-w-sm w-full shadow-2xl">
             <h3 className="font-bold text-ink text-xl mb-2">Sair da conta?</h3>
             <p className="text-muted text-sm mb-6">
-              Os dados salvos neste navegador serão apagados e você precisará entrar novamente.
+              Suas assinaturas continuam salvas na sua conta. Você precisará entrar novamente.
             </p>
             <div className="flex gap-2">
               <button onClick={() => setConfirmLogout(false)} className="btn-secondary flex-1">
@@ -108,6 +139,68 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
           </div>
         </div>
       )}
+
+      {passwordOpen && <PasswordModal onClose={() => setPasswordOpen(false)} />}
+    </div>
+  )
+}
+
+function PasswordModal({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({ current: "", next: "", confirm: "" })
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (form.next.length < 6) return setError("A nova senha deve ter ao menos 6 caracteres.")
+    if (form.next !== form.confirm) return setError("As senhas não coincidem.")
+    setError("")
+    setLoading(true)
+    try {
+      await changePassword(form.current, form.next)
+      setDone(true)
+      setTimeout(onClose, 1200)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível alterar a senha.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <form onSubmit={submit} noValidate className="card p-6 max-w-sm w-full shadow-2xl space-y-3">
+        <h3 className="font-bold text-ink text-xl mb-1">Alterar senha</h3>
+        <div>
+          <label htmlFor="current-password" className="label">Senha atual</label>
+          <input id="current-password" type="password" autoComplete="current-password" value={form.current} onChange={set("current")} className="input" />
+        </div>
+        <div>
+          <label htmlFor="new-password" className="label">Nova senha</label>
+          <input id="new-password" type="password" autoComplete="new-password" value={form.next} onChange={set("next")} className="input" />
+        </div>
+        <div>
+          <label htmlFor="confirm-password" className="label">Confirmar nova senha</label>
+          <input id="confirm-password" type="password" autoComplete="new-password" value={form.confirm} onChange={set("confirm")} className="input" />
+        </div>
+        {error && (
+          <p role="alert" className="text-sm text-danger bg-danger-soft rounded-lg px-3 py-2.5">
+            {error}
+          </p>
+        )}
+        <div className="flex gap-2 pt-2">
+          <button type="button" onClick={onClose} className="btn-secondary flex-1">
+            Cancelar
+          </button>
+          <button type="submit" disabled={loading || done} className="btn-primary flex-1">
+            {done ? "Senha alterada" : loading ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }

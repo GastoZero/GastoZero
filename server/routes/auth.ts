@@ -1,7 +1,8 @@
 import { Router } from "express"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { User } from "../models/User.js"
+import { User, toPublicUser } from "../models/User.js"
+import { requireAuth, type AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
 
@@ -38,7 +39,7 @@ router.post("/register", async (req, res) => {
   const token = signToken(user.id)
   res.status(201).json({
     token,
-    user: { id: user.id, name: user.name, email: user.email },
+    user: toPublicUser(user),
   })
 })
 
@@ -63,8 +64,15 @@ router.post("/login", async (req, res) => {
   const token = signToken(user.id)
   res.json({
     token,
-    user: { id: user.id, name: user.name, email: user.email },
+    user: toPublicUser(user),
   })
+})
+
+/** Valida o token salvo no app e devolve o usuário atual. */
+router.get("/me", requireAuth, async (req: AuthRequest, res) => {
+  const user = await User.findById(req.userId)
+  if (!user) return res.status(401).json({ error: "Usuário não encontrado." })
+  res.json({ user: toPublicUser(user) })
 })
 
 export default router
