@@ -41,7 +41,9 @@ export interface CatalogPlan {
   label: string
   price: number
   cycle: BillingCycle
+  priceUpdatedAt?: string
 }
+
 
 export interface CatalogService {
   id: number

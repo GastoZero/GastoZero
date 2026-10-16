@@ -19,6 +19,7 @@ export async function connectDB() {
   ensureDnsForSrv(uri)
 
   mongoose.set("strictQuery", true)
-  await mongoose.connect(uri)
+  await mongoose.connect(uri, { dbName: "gastozero" })
   console.log("MongoDB conectado")
+  console.log("Banco em uso:", mongoose.connection.name)
 }

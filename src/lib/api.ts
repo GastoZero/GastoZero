@@ -1,4 +1,4 @@
-import type { NotificationPrefs, StoredSubscription } from "../types"
+import type { CatalogService, NotificationPrefs, StoredSubscription } from "../types"
 
 export interface AuthUser {
   id: string
@@ -120,4 +120,8 @@ export function updateSubscription(id: string, updates: Partial<SubscriptionInpu
 
 export function deleteSubscription(id: string) {
   return request<null>("DELETE", `/subscriptions/${id}`)
+}
+
+export function listCatalog() {
+  return request<CatalogService[]>("GET", "/catalog")
 }

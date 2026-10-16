@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Search, X, Check, ArrowLeft, ChevronRight } from "lucide-react"
 import type { CatalogService, Page, StoredSubscription, Subscription } from "../types"
-import { CATALOG, CATEGORIES } from "../data/catalog"
+import { CATEGORIES } from "../data/catalog"
+import { listCatalog } from "../lib/api"
 import { addMonths, cycleLabel, formatCurrency, monthlyCost, toISODate } from "../lib/format"
 import PageHeader from "../components/PageHeader"
 import ServiceMark from "../components/ServiceMark"
@@ -23,15 +24,48 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
   const [price, setPrice] = useState("")
   const [success, setSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
+  
+const [catalog, setCatalog] = useState<CatalogService[]>([])
+const [catalogLoading, setCatalogLoading] = useState(true)
+const [catalogError, setCatalogError] = useState("")
+
+useEffect(() => {
+  let mounted = true
+
+  async function loadCatalog() {
+    try {
+      const services = await listCatalog()
+
+      if (mounted) {
+        setCatalog(services)
+      }
+    } catch {
+      if (mounted) {
+        setCatalogError("Não foi possível carregar o catálogo.")
+      }
+    } finally {
+      if (mounted) {
+        setCatalogLoading(false)
+      }
+    }
+  }
+
+  void loadCatalog()
+
+  return () => {
+    mounted = false
+  }
+}, [])
+
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
-    return CATALOG.filter(s => {
+    return catalog.filter(s => {
       const matchSearch = !term || s.name.toLowerCase().includes(term) || s.category.toLowerCase().includes(term)
       const matchCat = activeCategory === "Todos" || s.category === activeCategory
       return matchSearch && matchCat
     })
-  }, [search, activeCategory])
+  }, [catalog, search, activeCategory])
 
   const alreadyAdded = (name: string) => subscriptions.some(s => s.name === name)
 
@@ -126,6 +160,18 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
       </PageHeader>
 
       <div className="px-4 md:px-10">
+        {catalogLoading && (
+          <p className="text-sm text-muted mb-4">
+            Carregando catálogo...
+          </p>
+        )}
+
+        {catalogError && (
+          <p role="alert" className="text-sm text-danger mb-4">
+            {catalogError}
+          </p>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
           {filtered.map(service => {
             const added = alreadyAdded(service.name)
@@ -154,10 +200,11 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
                 <ChevronRight size={17} className="text-muted group-hover:text-ink group-hover:translate-x-0.5 transition" />
               </button>
             )
+
           })}
         </div>
 
-        {filtered.length === 0 && (
+        {!catalogLoading && !catalogError && filtered.length === 0 && (
           <div className="text-center py-16 text-muted text-sm">Nenhum serviço encontrado para "{search}".</div>
         )}
       </div>
@@ -216,7 +263,19 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
                               >
                                 {on && <span className="w-2 h-2 bg-brand rounded-full" />}
                               </span>
-                              <span className="text-sm text-ink font-medium">{plan.label}</span>
+                              
+                              <div>
+                                <span className="text-sm text-ink font-medium">
+                                  {plan.label}
+                                </span>
+
+                                {plan.priceUpdatedAt && (
+                                  <span className="block text-xs text-muted">
+                                    Referência do preço: {plan.priceUpdatedAt}
+                                  </span>
+                                )}
+                              </div>
+
                             </div>
                             <span className="num text-sm text-ink-2 text-right">
                               {formatCurrency(plan.price)}
