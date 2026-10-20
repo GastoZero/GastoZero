@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Search, Plus, MoreHorizontal, Pause, Play, Trash2, ArrowUpRight } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Pause, Play, Trash2, ArrowUpRight, Pencil } from "lucide-react"
 import type { Page, StoredSubscription, Subscription } from "../types"
 import { billingLabel, cycleLabel, formatCurrency } from "../lib/format"
 import PageHeader from "../components/PageHeader"
@@ -17,6 +17,10 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
   const [activeCategory, setActiveCategory] = useState("Todas")
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editPrice, setEditPrice] = useState("")
+  const [editError, setEditError] = useState("")
+
 
   const categories = ["Todas", ...Array.from(new Set(subscriptions.map(s => s.category))).sort()]
 
@@ -29,9 +33,10 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
     .sort((a, b) => (a.status === b.status ? a.daysUntil - b.daysUntil : a.status === "active" ? -1 : 1))
 
   const active = subscriptions.filter(s => s.status === "active")
-  const monthlyTotal = active.reduce((sum, s) => sum + s.monthlyPrice, 0)
+  const monthlyTotal = active.reduce((sum, s) => sum + s.monthlyPrice, 0) 
   const fmt = formatCurrency
   const toCancel = subscriptions.find(s => s.id === confirmCancel)
+  const toEdit = subscriptions.find(s => s.id === editingId)
 
   return (
     <div className="min-h-full pb-24 md:pb-10">
@@ -164,6 +169,16 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
                       </button>
                       {openMenu === sub.id && (
                         <div className="absolute right-0 top-9 card shadow-xl shadow-black/10 z-20 p-1 w-44">
+                        <MenuBtn
+                          icon={<Pencil size={14} />}
+                          label="Editar preço"
+                          onClick={() => {
+                            setEditingId(sub.id)
+                            setEditPrice(sub.price.toFixed(2).replace(".", ","))
+                            setEditError("")
+                            setOpenMenu(null)
+                          }}
+                        />
                           <MenuBtn
                             icon={paused ? <Play size={14} /> : <Pause size={14} />}
                             label={paused ? "Retomar" : "Pausar"}
@@ -224,6 +239,96 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
           </div>
         </div>
       )}
+
+      {toEdit && (
+        <div className="modal-backdrop">
+          <form
+            className="card p-6 max-w-sm w-full shadow-2xl"
+            onSubmit={e => {
+              e.preventDefault()
+
+              const raw = editPrice.trim()
+
+              // Valida se o usuário digitou um preço válido
+              if (!/^\d+(?:[.,]\d{1,2})?$/.test(raw)) {
+                setEditError("Digite um valor válido. Ex.: 15,90")
+                return
+              }
+
+              // Converte o valor para número
+              const newPrice = Number(raw.replace(",", "."))
+
+              if (!Number.isFinite(newPrice) || newPrice < 0) {
+                setEditError("O valor não pode ser negativo.")
+                return
+              }
+
+              // Atualiza a assinatura
+              update(toEdit.id, { price: newPrice })
+              setEditingId(null)
+              setEditError("")
+            }}
+          >
+            <h3 className="font-bold text-ink text-xl mb-2">
+              Editar preço — {toEdit.name}
+            </h3>
+
+            <p className="text-muted text-sm mb-5">
+              Informe o novo valor que você paga por esta assinatura.
+            </p>
+
+            <label
+              htmlFor="edit-subscription-price"
+              className="block text-sm font-semibold text-ink mb-2"
+            >
+              Novo valor (R$)
+            </label>
+
+            <input
+              id="edit-subscription-price"
+              type="text"
+              inputMode="decimal"
+              value={editPrice}
+              onChange={e => {
+                setEditPrice(e.target.value)
+                setEditError("")
+              }}
+              className="input mb-2"
+              placeholder="Ex.: 15,90"
+              autoFocus
+            />
+
+            {editError && (
+              <p role="alert" className="text-danger text-xs mb-3">
+                {editError}
+              </p>
+            )}
+
+            <p className="text-xs text-muted mb-5">
+              Essa alteração afeta apenas sua assinatura.
+              O preço de referência do catálogo permanece igual.
+            </p>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingId(null)}
+                className="btn-secondary flex-1"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                className="btn-primary flex-1"
+              >
+                Salvar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
 
       {openMenu !== null && <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(null)} />}
     </div>
