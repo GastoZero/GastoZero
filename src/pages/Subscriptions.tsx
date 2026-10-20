@@ -119,7 +119,8 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
                   <li
                     key={sub.id}
                     className={`grid grid-cols-[minmax(0,1fr)_auto_40px] md:grid-cols-[minmax(0,1fr)_140px_150px_130px_40px] gap-x-4 gap-y-1 items-center px-4 md:px-5 py-3.5 ${
-                      paused ? "opacity-60" : ""
+                      paused && openMenu !== sub.id ? "opacity-60" : ""
+
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
