@@ -1,3 +1,4 @@
+
 import { serviceColor } from "../data/catalog"
 
 interface Props {
@@ -12,9 +13,18 @@ const SIZES = {
   lg: "w-12 h-12 text-lg rounded-xl",
 }
 
-/** Monograma do serviço na cor da marca, no lugar dos antigos emojis. */
-export default function ServiceMark({ name, color, size = "md" }: Props) {
-  const bg = serviceColor(name, color)
+export default function ServiceMark({
+  name,
+  color,
+  size = "md",
+}: Props) {
+  const originalColor = serviceColor(name, color)
+
+  // Mistura a cor original com o fundo neutro.
+  const softBackground = `color-mix(in srgb, ${originalColor} 25%, var(--color-sunken))`
+
+  const softBorder = `color-mix(in srgb, ${originalColor} 20%, var(--color-line))`
+
   const letters = name
     .replace(/[^\p{L}\p{N} ]/gu, "")
     .split(" ")
@@ -27,8 +37,11 @@ export default function ServiceMark({ name, color, size = "md" }: Props) {
   return (
     <span
       aria-hidden="true"
-      className={`${SIZES[size]} flex-shrink-0 inline-flex items-center justify-center font-display font-bold text-white tracking-tight ring-1 ring-inset ring-white/10`}
-      style={{ background: bg }}
+      className={`${SIZES[size]} flex-shrink-0 inline-flex items-center justify-center font-semibold text-ink tracking-tight border`}
+      style={{
+        backgroundColor: softBackground,
+        borderColor: softBorder,
+      }}
     >
       {letters || "?"}
     </span>

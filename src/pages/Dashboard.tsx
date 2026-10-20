@@ -11,20 +11,26 @@ interface Props {
   isDark: boolean
 }
 
+
 /**
- * Cor fixa por categoria (a cor acompanha a categoria, não a posição no ranking).
- * Paleta categórica validada para daltonismo nos dois temas.
+ * Paleta contida em verdes e azuis.
+ * Cores fixas por categoria, com versões para os dois temas.
  */
 const CATEGORY_COLORS: Record<string, { light: string; dark: string }> = {
-  Streaming: { light: "#2a78d6", dark: "#3987e5" },
-  "Música": { light: "#eb6834", dark: "#d95926" },
-  Cloud: { light: "#1baf7a", dark: "#199e70" },
-  Academia: { light: "#eda100", dark: "#c98500" },
-  Telefonia: { light: "#e87ba4", dark: "#d55181" },
-  Software: { light: "#008300", dark: "#008300" },
-  Games: { light: "#4a3aa7", dark: "#9085e9" },
+  Streaming: { light: "#446C88", dark: "#7FA6C4" },
+  "Música": { light: "#477F73", dark: "#80B5A6" },
+  Cloud: { light: "#6B84A1", dark: "#A2B7D0" },
+  Academia: { light: "#6E8758", dark: "#A8BC91" },
+  Telefonia: { light: "#3F7A90", dark: "#7EBDCA" },
+  Software: { light: "#286A57", dark: "#6FAC98" },
+  Games: { light: "#687A91", dark: "#9CAFC3" },
 }
-const OTHER_COLOR = { light: "#e34948", dark: "#e66767" }
+
+const OTHER_COLOR = {
+  light: "#82909B",
+  dark: "#ADBAC5"
+}
+
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
@@ -64,8 +70,8 @@ export default function Dashboard({ subscriptions, profile, navigate, isDark }: 
   const chart = {
     grid: isDark ? "#1d3247" : "#e3e8e2",
     tick: isDark ? "#7c91a6" : "#687887",
-    bar: isDark ? "#3ad883" : "#0b7f45",
-    cursor: isDark ? "rgba(58,216,131,0.08)" : "rgba(11,127,69,0.06)",
+    bar: isDark ? "#71AF9E" : "#346E61",
+    cursor: isDark ? "rgba(113,175,158,0.10)" : "rgba(52,110,97,0.07)",
     tooltip: {
       borderRadius: 8,
       border: `1px solid ${isDark ? "#2a4560" : "#dbe1da"}`,
@@ -103,6 +109,7 @@ export default function Dashboard({ subscriptions, profile, navigate, isDark }: 
         <div className="grid lg:grid-cols-5 gap-4">
           {/* Destaque: total do mês */}
           <section className="lg:col-span-3 relative overflow-hidden rounded-xl bg-hero text-on-hero p-6 md:p-8">
+            
             <svg
               aria-hidden="true"
               viewBox="0 0 200 200"
@@ -111,6 +118,7 @@ export default function Dashboard({ subscriptions, profile, navigate, isDark }: 
               <circle cx="100" cy="100" r="64" fill="none" stroke="#4fe08f" strokeWidth="18" />
               <path d="M52 148 L148 52" stroke="#4fe08f" strokeWidth="18" strokeLinecap="round" />
             </svg>
+
 
             <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-hero-muted">
               Você gasta por mês

@@ -14,7 +14,7 @@ interface Props {
 
 export default function Subscriptions({ subscriptions, update, remove, navigate }: Props) {
   const [search, setSearch] = useState("")
-  const [activeCategory, setActiveCategory] = useState("Todas")
+  const [activeCategory, setActiveCategory] = useState("")
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [confirmCancel, setConfirmCancel] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -27,9 +27,12 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
   const filtered = subscriptions
     .filter(s => {
       const matchSearch = s.name.toLowerCase().includes(search.trim().toLowerCase())
-      const matchCat = activeCategory === "Todas" || s.category === activeCategory
-      return matchSearch && matchCat
-    })
+      const matchCat =
+        activeCategory === "" ||
+        activeCategory === "Todas" ||
+        s.category === activeCategory
+            return matchSearch && matchCat
+          })
     .sort((a, b) => (a.status === b.status ? a.daysUntil - b.daysUntil : a.status === "active" ? -1 : 1))
 
   const active = subscriptions.filter(s => s.status === "active")
@@ -70,17 +73,26 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
               className="input pl-10"
             />
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={activeCategory === cat ? "chip-on" : "chip-off"}
-              >
-                {cat}
-              </button>
-            ))}
+          
+          <div className="w-full lg:w-60">
+            <select
+              value={activeCategory}
+              onChange={e => setActiveCategory(e.target.value)}
+              className="input cursor-pointer"
+              aria-label="Filtrar por categoria"
+            >
+              <option value="" disabled>
+                Escolha uma categoria
+              </option>
+
+              {categories.map(cat => (
+                <option key={cat} value={cat}>
+                  {cat === "Todas" ? "Todas as categorias" : cat}
+                </option>
+              ))}
+            </select>
           </div>
+
         </div>
 
         {subscriptions.length === 0 ? (

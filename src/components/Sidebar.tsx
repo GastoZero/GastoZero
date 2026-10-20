@@ -38,7 +38,7 @@ export default function Sidebar({ currentPage, navigate, profile, alertCount, th
               <Icon size={17} strokeWidth={active ? 2.2 : 1.8} className={active ? "text-brand" : "text-muted"} />
               {label}
               {page === "alerts" && alertCount > 0 && (
-                <span className="ml-auto num min-w-5 h-5 px-1.5 bg-danger text-white text-[11px] rounded-full flex items-center justify-center font-semibold">
+                <span className="ml-auto num min-w-5 h-5 px-1.5 bg-ink text-canvas text-[11px] rounded-full flex items-center justify-center font-semibold">
                   {alertCount}
                 </span>
               )}
