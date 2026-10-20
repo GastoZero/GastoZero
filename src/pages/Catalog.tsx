@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Search, X, Check, ArrowLeft, ChevronRight } from "lucide-react"
+import { Search, X, Check, ArrowLeft, ChevronRight, Plus } from "lucide-react"
 import type { CatalogService, Page, StoredSubscription, Subscription } from "../types"
 import { CATEGORIES } from "../data/catalog"
 import { listCatalog } from "../lib/api"
@@ -24,6 +24,18 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
   const [price, setPrice] = useState("")
   const [success, setSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [customOpen, setCustomOpen] = useState(false)
+  const [customName, setCustomName] = useState("")
+  const [customCategory, setCustomCategory] = useState("Outros")
+  const [customPlan, setCustomPlan] = useState("Personalizado")
+  const [customPrice, setCustomPrice] = useState("")
+  const [customCycle, setCustomCycle] = useState<"monthly" | "yearly">("monthly")
+  const [customBillingDate, setCustomBillingDate] = useState(
+    () => toISODate(addMonths(new Date(), 1))
+  )
+  const [customSaving, setCustomSaving] = useState(false)
+  const [customError, setCustomError] = useState("")
+
   
 const [catalog, setCatalog] = useState<CatalogService[]>([])
 const [catalogLoading, setCatalogLoading] = useState(true)
@@ -117,6 +129,55 @@ useEffect(() => {
     }, 1200)
   }
 
+  
+const handleCustomAdd = async () => {
+  if (customSaving) return
+
+  const name = customName.trim()
+  const plan = customPlan.trim()
+  const rawPrice = customPrice.trim()
+
+  if (!name || !plan || !customBillingDate) {
+    setCustomError("Preencha todos os campos obrigatórios.")
+    return
+  }
+
+  if (!/^\d+(?:[.,]\d{1,2})?$/.test(rawPrice)) {
+    setCustomError("Digite um preço válido. Ex.: 29,90")
+    return
+  }
+
+  const value = Number(rawPrice.replace(",", "."))
+
+  if (!Number.isFinite(value) || value < 0) {
+    setCustomError("Informe um preço válido.")
+    return
+  }
+
+  setCustomError("")
+  setCustomSaving(true)
+
+  try {
+    await addSubscription({
+      name,
+      plan,
+      category: customCategory,
+      price: value,
+      cycle: customCycle,
+      nextBilling: customBillingDate,
+      status: "active",
+      color: "#0B7F45"
+    })
+
+    setCustomOpen(false)
+    navigate("subscriptions")
+  } catch {
+    setCustomError("Não foi possível salvar a assinatura. Tente novamente.")
+  } finally {
+    setCustomSaving(false)
+  }
+}
+
   return (
     <div className="min-h-full pb-24 md:pb-10">
       <div className="px-4 md:px-10 pt-5 md:pt-8">
@@ -173,6 +234,33 @@ useEffect(() => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+          
+          <button
+            type="button"
+            onClick={() => setCustomOpen(true)}
+            className="group card p-4 flex items-center gap-3.5 text-left hover:border-line-strong hover:bg-sunken/40 transition-colors cursor-pointer"
+          >
+            <span className="w-12 h-12 rounded-xl bg-brand flex-shrink-0 inline-flex items-center justify-center text-on-brand">
+              <Plus size={24} strokeWidth={2.5} />
+            </span>
+
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-ink truncate">
+                Cadastrar serviço
+              </p>
+
+              <p className="text-xs text-muted mt-0.5">
+                Não encontrou? Adicione manualmente
+              </p>
+            </div>
+
+            <ChevronRight
+              size={17}
+              className="text-muted group-hover:text-ink group-hover:translate-x-0.5 transition"
+            />
+          </button>
+
+
           {filtered.map(service => {
             const added = alreadyAdded(service.name)
             return (
@@ -207,7 +295,190 @@ useEffect(() => {
         {!catalogLoading && !catalogError && filtered.length === 0 && (
           <div className="text-center py-16 text-muted text-sm">Nenhum serviço encontrado para "{search}".</div>
         )}
+
       </div>
+
+      {customOpen && (
+        <div
+          className="modal-backdrop"
+          onClick={e => {
+            if (e.target === e.currentTarget) {
+              setCustomOpen(false)
+            }
+          }}
+        >
+          <div className="bg-surface border border-line w-full max-w-md rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="font-bold text-ink text-lg">
+                  Cadastrar serviço
+                </h3>
+                <p className="text-xs text-muted mt-1">
+                  Adicione uma assinatura personalizada.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCustomOpen(false)}
+                className="text-muted hover:text-ink cursor-pointer"
+                aria-label="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            
+            <form
+              onSubmit={e => {
+                e.preventDefault()
+                void handleCustomAdd()
+              }}
+              className="space-y-4"
+            >
+              {/* Nome do serviço */}
+              <div>
+                <label htmlFor="custom-name" className="label">
+                  Nome do serviço
+                </label>
+                <input
+                  id="custom-name"
+                  type="text"
+                  value={customName}
+                  onChange={e => setCustomName(e.target.value)}
+                  placeholder="Ex.: Academia Fit"
+                  className="input"
+                  maxLength={80}
+                  required
+                />
+              </div>
+
+              {/* Categoria */}
+              <div>
+                <label htmlFor="custom-category" className="label">
+                  Categoria
+                </label>
+                <select
+                  id="custom-category"
+                  value={customCategory}
+                  onChange={e => setCustomCategory(e.target.value)}
+                  className="input"
+                  required
+                >
+                  <option value="Outros">Outros</option>
+                  {CATEGORIES.map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Plano */}
+              <div>
+                <label htmlFor="custom-plan" className="label">
+                  Nome do plano
+                </label>
+                <input
+                  id="custom-plan"
+                  type="text"
+                  value={customPlan}
+                  onChange={e => setCustomPlan(e.target.value)}
+                  placeholder="Ex.: Plano mensal"
+                  className="input"
+                  maxLength={80}
+                  required
+                />
+              </div>
+
+              {/* Preço e periodicidade */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="custom-price" className="label">
+                    Valor (R$)
+                  </label>
+                  <input
+                    id="custom-price"
+                    type="text"
+                    inputMode="decimal"
+                    value={customPrice}
+                    onChange={e => setCustomPrice(e.target.value)}
+                    placeholder="29,90"
+                    className="input num"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="custom-cycle" className="label">
+                    Periodicidade
+                  </label>
+                  <select
+                    id="custom-cycle"
+                    value={customCycle}
+                    onChange={e =>
+                      setCustomCycle(e.target.value as "monthly" | "yearly")
+                    }
+                    className="input"
+                  >
+                    <option value="monthly">Mensal</option>
+                    <option value="yearly">Anual</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Próxima cobrança */}
+              <div>
+                <label htmlFor="custom-billing" className="label">
+                  Próxima cobrança
+                </label>
+                <input
+                  id="custom-billing"
+                  type="date"
+                  value={customBillingDate}
+                  onChange={e => setCustomBillingDate(e.target.value)}
+                  className="input num"
+                  required
+                />
+              </div>
+
+              {customError && (
+                <p role="alert" className="text-sm text-danger">
+                  {customError}
+                </p>
+              )}
+
+              <p className="text-xs text-muted">
+                Este serviço será adicionado apenas às suas assinaturas.
+                Ele não altera o catálogo global do GastoZero.
+              </p>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomOpen(false)}
+                  disabled={customSaving}
+                  className="btn-secondary flex-1"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={customSaving}
+                  className="btn-primary flex-1"
+                >
+                  {customSaving ? "Salvando..." : "Adicionar assinatura"}
+                </button>
+              </div>
+            </form>
+
+
+          </div>
+        </div>
+      )}
+
 
       {selectedService && (
         <div
