@@ -12,8 +12,12 @@ import Catalog from "./pages/Catalog"
 import Simulator from "./pages/Simulator"
 import Alerts from "./pages/Alerts"
 import Settings from "./pages/Settings"
+import AdminUsers from "./pages/admin/Users"
+import AdminReports from "./pages/admin/Reports"
+import AdminAdmins from "./pages/admin/Admins"
 import Sidebar from "./components/Sidebar"
 import BottomNav from "./components/BottomNav"
+import { HOME_PAGE } from "./components/nav"
 
 type AuthPage = "login" | "register"
 
@@ -21,7 +25,7 @@ type AuthPage = "login" | "register"
 type Session = "checking" | "anon" | "error" | "ready"
 
 function toProfile(user: api.AuthUser): UserProfile {
-  return { name: user.name, email: user.email, notifications: user.notifications }
+  return { name: user.name, email: user.email, role: user.role ?? "user", notifications: user.notifications }
 }
 
 export default function App() {
@@ -49,8 +53,10 @@ export default function App() {
     setSession("checking")
     try {
       const [{ user }, subs] = await Promise.all([api.fetchMe(), api.listSubscriptions()])
-      setProfile(toProfile(user))
+      const nextProfile = toProfile(user)
+      setProfile(nextProfile)
       setStored(subs)
+      setPage(HOME_PAGE[nextProfile.role])
       setSession("ready")
     } catch (err) {
       if (err instanceof api.ApiError && err.status === 401) logout()
@@ -151,7 +157,25 @@ export default function App() {
     setProfile(toProfile(user))
   }
 
-  const pages: Record<Page, React.ReactNode> = {
+  const settings = (
+    <Settings
+      profile={profile}
+      onSaveProfile={saveProfile}
+      theme={theme}
+      onThemeChange={setTheme}
+      onLogout={logout}
+    />
+  )
+
+  // O perfil define o menu e quais telas existem; o servidor também barra /api/admin para não-admins.
+  const adminPages: Partial<Record<Page, React.ReactNode>> = {
+    users: <AdminUsers />,
+    reports: <AdminReports isDark={isDark} />,
+    admins: <AdminAdmins />,
+    settings,
+  }
+
+  const userPages: Partial<Record<Page, React.ReactNode>> = {
     dashboard: <Dashboard subscriptions={subscriptions} profile={profile} navigate={navigate} isDark={isDark} />,
     subscriptions: (
       <Subscriptions
@@ -170,21 +194,15 @@ export default function App() {
     ),
     simulator: <Simulator subscriptions={subscriptions} navigate={navigate} />,
     alerts: <Alerts subscriptions={subscriptions} navigate={navigate} />,
-    settings: (
-      <Settings
-        profile={profile}
-        onSaveProfile={saveProfile}
-        theme={theme}
-        onThemeChange={setTheme}
-        onLogout={logout}
-      />
-    ),
+    settings,
   }
+
+  const pages = profile.role === "admin" ? adminPages : userPages
 
   const upcomingAlerts = subscriptions.filter(s => s.status === "active" && s.daysUntil <= 3).length
 
   return (
-    <div className="flex h-full bg-canvas overflow-hidden">
+    <div className="flex h-full bg-canvas overflow-hidden print:block print:h-auto print:overflow-visible">
       <Sidebar
         currentPage={page}
         navigate={navigate}
@@ -193,10 +211,10 @@ export default function App() {
         theme={theme}
         onThemeChange={setTheme}
       />
-      <main className="flex-1 md:ml-64 overflow-y-auto">
+      <main className="flex-1 md:ml-64 overflow-y-auto print:ml-0 print:overflow-visible">
         {pages[page]}
       </main>
-      <BottomNav currentPage={page} navigate={navigate} alertCount={upcomingAlerts} />
+      <BottomNav currentPage={page} navigate={navigate} alertCount={upcomingAlerts} role={profile.role} />
       {error && (
         <div
           role="alert"

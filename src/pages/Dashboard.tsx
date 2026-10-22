@@ -2,6 +2,7 @@ import { Bell, ArrowRight, ArrowUpRight } from "lucide-react"
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 import type { Page, Subscription, UserProfile } from "../types"
 import { billingLabel, formatCurrency } from "../lib/format"
+import { chartTheme } from "../lib/chart"
 import ServiceMark from "../components/ServiceMark"
 
 interface Props {
@@ -67,20 +68,7 @@ export default function Dashboard({ subscriptions, profile, navigate, isDark }: 
   const urgentCount = active.filter(s => s.daysUntil <= 3).length
   const firstName = profile.name.split(" ")[0] || "por aqui"
 
-  const chart = {
-    grid: isDark ? "#1d3247" : "#e3e8e2",
-    tick: isDark ? "#7c91a6" : "#687887",
-    bar: isDark ? "#71AF9E" : "#346E61",
-    cursor: isDark ? "rgba(113,175,158,0.10)" : "rgba(52,110,97,0.07)",
-    tooltip: {
-      borderRadius: 8,
-      border: `1px solid ${isDark ? "#2a4560" : "#dbe1da"}`,
-      background: isDark ? "#0f1d2c" : "#ffffff",
-      color: isDark ? "#e6eef6" : "#0e1a26",
-      fontSize: 12,
-      fontFamily: "Geist Mono, monospace",
-    },
-  }
+  const chart = chartTheme(isDark)
 
   const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })
 

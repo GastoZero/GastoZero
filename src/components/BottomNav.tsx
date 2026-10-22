@@ -1,22 +1,23 @@
-import type { Page } from "../types"
+import type { Page, UserRole } from "../types"
 import { NAV_ITEMS, navSection } from "./nav"
 
 interface Props {
   currentPage: Page
   navigate: (p: Page) => void
   alertCount: number
+  role: UserRole
 }
 
-export default function BottomNav({ currentPage, navigate, alertCount }: Props) {
+export default function BottomNav({ currentPage, navigate, alertCount, role }: Props) {
   const section = navSection(currentPage)
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur border-t border-line z-30"
+      className="md:hidden print:hidden fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur border-t border-line z-30"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex">
-        {NAV_ITEMS.map(({ short, page, icon: Icon }) => {
+        {NAV_ITEMS[role].map(({ short, page, icon: Icon }) => {
           const active = section === page
           return (
             <button

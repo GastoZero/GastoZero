@@ -1,4 +1,5 @@
 import type { Page, ThemePreference, UserProfile } from "../types"
+import Avatar from "./Avatar"
 import Logo from "./Logo"
 import ThemeSwitch from "./ThemeSwitch"
 import { NAV_ITEMS, navSection } from "./nav"
@@ -14,16 +15,17 @@ interface Props {
 
 export default function Sidebar({ currentPage, navigate, profile, alertCount, theme, onThemeChange }: Props) {
   const section = navSection(currentPage)
+  const isAdmin = profile.role === "admin"
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 h-full w-64 bg-surface border-r border-line flex-col z-30">
+    <aside className="hidden md:flex print:hidden fixed left-0 top-0 h-full w-64 bg-surface border-r border-line flex-col z-30">
       <div className="px-6 pt-7 pb-8">
         <Logo />
       </div>
 
-      <p className="eyebrow px-6 mb-2">Menu</p>
+      <p className="eyebrow px-6 mb-2">{isAdmin ? "Administração" : "Menu"}</p>
       <nav className="flex-1 px-3 space-y-0.5">
-        {NAV_ITEMS.map(({ label, page, icon: Icon }) => {
+        {NAV_ITEMS[profile.role].map(({ label, page, icon: Icon }) => {
           const active = section === page
           return (
             <button
@@ -55,9 +57,7 @@ export default function Sidebar({ currentPage, navigate, profile, alertCount, th
         onClick={() => navigate("settings")}
         className="mx-3 mb-3 flex items-center gap-3 rounded-lg px-3 py-3 border-t border-line hover:bg-sunken transition-colors text-left cursor-pointer"
       >
-        <div className="w-9 h-9 rounded-full bg-hero text-hero-accent flex items-center justify-center font-display font-bold text-sm">
-          {(profile.name.trim()[0] ?? "?").toUpperCase()}
-        </div>
+        <Avatar name={profile.name} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-ink truncate">{profile.name}</p>
           <p className="text-xs text-muted truncate">{profile.email}</p>

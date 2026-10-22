@@ -74,6 +74,15 @@ body,
   height: 100%;
 }
 
+/* Impressão / "Salvar como PDF" dos relatórios: deixa a página crescer além da tela. */
+@media print {
+  html,
+  body,
+  #root {
+    height: auto;
+  }
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--color-canvas);

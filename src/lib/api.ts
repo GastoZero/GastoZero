@@ -1,9 +1,18 @@
-import type { CatalogService, NotificationPrefs, StoredSubscription } from "../types"
+import type {
+  AccountSummary,
+  AdminStats,
+  AdminUser,
+  CatalogService,
+  NotificationPrefs,
+  StoredSubscription,
+  UserRole,
+} from "../types"
 
 export interface AuthUser {
   id: string
   name: string
   email: string
+  role: UserRole
   notifications: NotificationPrefs
 }
 
@@ -124,4 +133,26 @@ export function deleteSubscription(id: string) {
 
 export function listCatalog() {
   return request<CatalogService[]>("GET", "/catalog")
+}
+
+// Administração
+
+export function adminListUsers() {
+  return request<AdminUser[]>("GET", "/admin/users")
+}
+
+export function adminUserSubscriptions(userId: string) {
+  return request<StoredSubscription[]>("GET", `/admin/users/${userId}/subscriptions`)
+}
+
+export function adminStats() {
+  return request<AdminStats>("GET", "/admin/stats")
+}
+
+export function adminListAdmins() {
+  return request<AccountSummary[]>("GET", "/admin/admins")
+}
+
+export function adminCreateAdmin(data: { name: string; email: string; password: string }) {
+  return request<AccountSummary>("POST", "/admin/admins", data)
 }

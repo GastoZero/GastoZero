@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.js"
 import meRoutes from "./routes/me.js"
 import subscriptionRoutes from "./routes/subscriptions.js"
 import catalogRoutes from "./routes/catalog.js"
+import adminRoutes from "./routes/admin.js"
 
 const app = express()
 
@@ -17,6 +18,7 @@ app.use("/api/auth", authRoutes)
 app.use("/api/me", meRoutes)
 app.use("/api/subscriptions", subscriptionRoutes)
 app.use("/api/catalog", catalogRoutes)
+app.use("/api/admin", adminRoutes)
 
 app.use("/api", (_req, res) => res.status(404).json({ error: "Rota não encontrada." }))
 

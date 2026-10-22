@@ -80,3 +80,6 @@ export function billingLabel(daysUntil: number): string {
   if (daysUntil === 1) return "Amanhã"
   return `Em ${daysUntil} dias`
 }
+
+/** Data ISO completa (ex.: createdAt) em dd/mm/aaaa. */
+export const formatDate = (iso: string) => new Date(iso).toLocaleDateString("pt-BR")

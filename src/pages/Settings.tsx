@@ -91,6 +91,7 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
           </Row>
         </Section>
 
+        {profile.role !== "admin" && (
         <Section title="Notificações">
           <div className="divide-y divide-line">
             <Row label="Alertas de cobrança" description="Aviso antes de débitos automáticos">
@@ -106,6 +107,7 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
             </p>
           )}
         </Section>
+        )}
 
         <Section title="Preferências">
           <Row label="Moeda" description="Moeda exibida nos valores">

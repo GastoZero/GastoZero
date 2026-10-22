@@ -36,6 +36,10 @@ export type Page =
   | "simulator"
   | "alerts"
   | "settings"
+  // Telas do administrador
+  | "users"
+  | "reports"
+  | "admins"
 
 export interface CatalogPlan {
   label: string
@@ -60,8 +64,43 @@ export interface NotificationPrefs {
   renewal: boolean
 }
 
+export type UserRole = "user" | "admin"
+
 export interface UserProfile {
   name: string
   email: string
+  role: UserRole
   notifications: NotificationPrefs
+}
+
+/** Conta listada no painel do administrador. */
+export interface AccountSummary {
+  id: string
+  name: string
+  email: string
+  /** Data de cadastro em ISO. */
+  createdAt: string
+}
+
+export interface AdminUser extends AccountSummary {
+  subscriptions: number
+  /** Soma mensal das assinaturas ativas. */
+  monthlyTotal: number
+}
+
+export interface StatGroup {
+  name: string
+  count: number
+  /** Gasto mensal somado. */
+  value: number
+}
+
+export interface AdminStats {
+  users: number
+  payingUsers: number
+  activeSubscriptions: number
+  monthlyTotal: number
+  avgPerUser: number
+  byCategory: StatGroup[]
+  services: StatGroup[]
 }

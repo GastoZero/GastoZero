@@ -135,6 +135,22 @@ npm run preview      # serve o build — necessário para testar o PWA
 Credenciais definidas em `src/pages/Login.tsx` enquanto não há backend de
 autenticação.
 
+### 🛡️ Painel do administrador
+
+Não existe botão de "entrar como admin": o login é o mesmo, e o que diferencia é
+o e-mail, que no banco tem `role: "admin"`. Para criar o primeiro administrador:
+
+```bash
+npm run create-admin -- admin@gastozero.com minhaSenha123 "Nome do Admin"
+```
+
+Se o e-mail já existir, a conta é promovida a admin e recebe a nova senha. Depois
+disso, um admin cadastra outros pela tela **Administradores**. O painel tem:
+
+- **Usuários**: lista dos usuários padrão com as assinaturas de cada um
+- **Relatórios**: gráficos gerais (gasto por categoria, serviços mais assinados) com exportação em CSV e PDF
+- **Administradores**: lista e cadastro de contas de admin
+
 ---
 
 ## 📁 Estrutura do projeto
