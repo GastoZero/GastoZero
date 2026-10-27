@@ -95,6 +95,13 @@ export interface StatGroup {
   value: number
 }
 
+/** Novos cadastros em um mês (mês no formato YYYY-MM). */
+export interface GrowthPoint {
+  month: string
+  users: number
+  subscriptions: number
+}
+
 export interface AdminStats {
   users: number
   payingUsers: number
@@ -103,4 +110,6 @@ export interface AdminStats {
   avgPerUser: number
   byCategory: StatGroup[]
   services: StatGroup[]
+  /** Últimos meses, do mais antigo ao atual. */
+  growth: GrowthPoint[]
 }

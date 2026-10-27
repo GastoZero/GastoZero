@@ -12,6 +12,31 @@ router.use(requireAuth, requireAdmin)
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const NOT_ADMIN = { role: { $ne: "admin" as const } }
 
+/** Quantos meses o gráfico de crescimento mostra (incluindo o atual). */
+const GROWTH_MONTHS = 6
+
+const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+
+/** Conta cadastros de usuários e de assinaturas por mês nos últimos GROWTH_MONTHS meses. */
+function growthByMonth(userDates: Date[], subDates: Date[]) {
+  const now = new Date()
+  const points = Array.from({ length: GROWTH_MONTHS }, (_, i) => ({
+    month: monthKey(new Date(now.getFullYear(), now.getMonth() - (GROWTH_MONTHS - 1 - i), 1)),
+    users: 0,
+    subscriptions: 0,
+  }))
+  const byKey = new Map(points.map(p => [p.month, p]))
+  for (const d of userDates) {
+    const p = byKey.get(monthKey(new Date(d)))
+    if (p) p.users++
+  }
+  for (const d of subDates) {
+    const p = byKey.get(monthKey(new Date(d)))
+    if (p) p.subscriptions++
+  }
+  return points
+}
+
 const summary = (u: { id: string; name: string; email: string; createdAt: Date }) => ({
   id: u.id,
   name: u.name,
@@ -43,8 +68,11 @@ router.get("/users/:id/subscriptions", async (req, res) => {
 
 /** Indicadores gerais considerando só as assinaturas ativas dos usuários padrão. */
 router.get("/stats", async (_req, res) => {
-  const users = await User.find(NOT_ADMIN).select("_id").lean()
-  const subs = await Subscription.find({ user: { $in: users.map(u => u._id) }, status: "active" }).lean()
+  const users = await User.find(NOT_ADMIN).select("_id createdAt").lean()
+  const userIds = users.map(u => u._id)
+  const subs = await Subscription.find({ user: { $in: userIds }, status: "active" }).lean()
+  // Crescimento conta todas as assinaturas criadas (ativas e pausadas).
+  const allSubDates = await Subscription.find({ user: { $in: userIds } }).select("createdAt").lean()
 
   const group = (key: "category" | "name") => {
     const map: Record<string, { name: string; count: number; value: number }> = {}
@@ -67,6 +95,10 @@ router.get("/stats", async (_req, res) => {
     avgPerUser: payingUsers ? monthlyTotal / payingUsers : 0,
     byCategory: group("category").sort((a, b) => b.value - a.value),
     services: group("name").sort((a, b) => b.count - a.count || b.value - a.value),
+    growth: growthByMonth(
+      users.map(u => u.createdAt),
+      allSubDates.map(s => s.createdAt),
+    ),
   })
 })
 
