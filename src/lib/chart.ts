@@ -4,6 +4,8 @@ export function chartTheme(isDark: boolean) {
     grid: isDark ? "#1d3247" : "#e3e8e2",
     tick: isDark ? "#7c91a6" : "#687887",
     bar: isDark ? "#71AF9E" : "#346E61",
+    /** Segunda série, para gráficos com duas linhas. */
+    bar2: isDark ? "#7FA6C4" : "#446C88",
     cursor: isDark ? "rgba(113,175,158,0.10)" : "rgba(52,110,97,0.07)",
     tooltip: {
       borderRadius: 8,

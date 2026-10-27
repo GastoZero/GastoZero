@@ -1,6 +1,6 @@
 import { Download, Printer } from "lucide-react"
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import type { AdminStats, StatGroup } from "../../types"
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import type { AdminStats, GrowthPoint, StatGroup } from "../../types"
 import * as api from "../../lib/api"
 import { useLoad } from "../../lib/useLoad"
 import { chartTheme } from "../../lib/chart"
@@ -46,6 +46,8 @@ export default function Reports({ isDark }: { isDark: boolean }) {
               <Stat label="Gasto mensal total" value={formatCurrency(data.monthlyTotal)} />
               <Stat label="Média por assinante" value={formatCurrency(data.avgPerUser)} hint="por mês" />
             </div>
+
+            <GrowthCard data={data.growth ?? []} chart={chart} />
 
             <div className="grid md:grid-cols-2 gap-4 break-inside-avoid">
               <ChartCard
@@ -99,6 +101,100 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
       <p className="text-xs text-muted">{label}</p>
       <p className="num text-lg md:text-xl font-semibold text-ink mt-1">{value}</p>
       {hint && <p className="text-[11px] text-muted mt-0.5">{hint}</p>}
+    </div>
+  )
+}
+
+const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+const monthLabel = (key: string) => MONTH_LABELS[Number(key.slice(5, 7)) - 1] ?? key
+
+/** Linhas de novos usuários e novas assinaturas por mês, com o resumo do mês atual. */
+function GrowthCard({ data, chart }: { data: GrowthPoint[]; chart: ReturnType<typeof chartTheme> }) {
+  const current = data.at(-1)
+  const previous = data.at(-2)
+  const totalUsers = data.reduce((sum, p) => sum + p.users, 0)
+  const rows = data.map(p => ({ ...p, label: monthLabel(p.month) }))
+  const series = [
+    { key: "users", name: "Novos usuários", color: chart.bar },
+    { key: "subscriptions", name: "Novas assinaturas", color: chart.bar2 },
+  ] as const
+
+  return (
+    <section className="card p-5 break-inside-avoid">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+        <div>
+          <h2 className="font-bold text-ink text-lg">Crescimento da base</h2>
+          <p className="text-xs text-muted">Cadastros por mês nos últimos {data.length} meses.</p>
+        </div>
+        {current && (
+          <div className="flex gap-6">
+            <Delta label="Usuários este mês" value={current.users} previous={previous?.users} />
+            <Delta label="Assinaturas este mês" value={current.subscriptions} previous={previous?.subscriptions} />
+          </div>
+        )}
+      </div>
+
+      {totalUsers === 0 && data.every(p => p.subscriptions === 0) ? (
+        <p className="h-[200px] flex items-center justify-center text-sm text-muted">Sem cadastros no período.</p>
+      ) : (
+        <>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={rows} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
+              <CartesianGrid stroke={chart.grid} vertical={false} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: chart.tick, fontFamily: "Geist Mono, monospace" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis hide allowDecimals={false} />
+              <Tooltip
+                contentStyle={chart.tooltip}
+                labelStyle={{ color: chart.tick }}
+                cursor={{ stroke: chart.grid }}
+              />
+              {series.map(s => (
+                <Line
+                  key={s.key}
+                  type="monotone"
+                  dataKey={s.key}
+                  name={s.name}
+                  stroke={s.color}
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: s.color, strokeWidth: 0 }}
+                  activeDot={{ r: 5 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+          <ul className="flex gap-5 mt-3 text-xs text-ink-2">
+            {series.map(s => (
+              <li key={s.key} className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: s.color }} />
+                {s.name}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  )
+}
+
+/** Valor do mês atual com a diferença em relação ao mês anterior. */
+function Delta({ label, value, previous }: { label: string; value: number; previous?: number }) {
+  const diff = previous === undefined ? 0 : value - previous
+  return (
+    <div>
+      <p className="text-[11px] text-muted">{label}</p>
+      <p className="num text-lg font-semibold text-ink">
+        +{value}
+        {diff !== 0 && (
+          <span className={`ml-1.5 text-xs font-medium ${diff > 0 ? "text-brand" : "text-danger"}`}>
+            {diff > 0 ? "▲" : "▼"} {Math.abs(diff)}
+          </span>
+        )}
+      </p>
     </div>
   )
 }
@@ -167,6 +263,9 @@ function exportCsv(stats: AdminStats) {
     ...groupRows("Categoria", stats.byCategory),
     [],
     ...groupRows("Serviço", stats.services),
+    [],
+    ["Mês", "Novos usuários", "Novas assinaturas"],
+    ...(stats.growth ?? []).map(g => [g.month, g.users, g.subscriptions]),
   ]
 
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n")
