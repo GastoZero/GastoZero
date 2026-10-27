@@ -5,6 +5,7 @@ import { billingLabel, formatCurrency } from "../lib/format"
 import PageHeader from "../components/PageHeader"
 import ServiceMark from "../components/ServiceMark"
 import Switch from "../components/Switch"
+import BillingCalendar from "../components/BillingCalendar"
 
 interface Props {
   subscriptions: Subscription[]
@@ -53,6 +54,7 @@ export default function Alerts({ subscriptions, navigate }: Props) {
         </div>
 
         <aside className="space-y-4">
+          <BillingCalendar subscriptions={subscriptions} />
           <div className="card p-5">
             <h2 className="font-bold text-ink text-lg mb-1">Quando avisar</h2>
             <p className="text-xs text-muted mb-4">Antecedência dos lembretes de cobrança.</p>
