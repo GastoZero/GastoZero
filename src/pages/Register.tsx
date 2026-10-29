@@ -61,7 +61,7 @@ export default function Register({ onRegister, onLogin }: Props) {
               type="text"
               value={form.name}
               onChange={set("name")}
-              placeholder="Giovanna Silva"
+              placeholder="Digite seu nome"
               className="input py-3"
             />
           </div>
@@ -72,7 +72,7 @@ export default function Register({ onRegister, onLogin }: Props) {
               type="email"
               value={form.email}
               onChange={set("email")}
-              placeholder="giovanna@email.com"
+              placeholder="Digite seu e-mail"
               className="input py-3"
             />
           </div>
@@ -83,7 +83,7 @@ export default function Register({ onRegister, onLogin }: Props) {
               type="password"
               value={form.password}
               onChange={set("password")}
-              placeholder="••••••••"
+              placeholder="Digite sua senha"
               className="input py-3"
             />
           </div>
@@ -94,7 +94,7 @@ export default function Register({ onRegister, onLogin }: Props) {
               type="password"
               value={form.confirm}
               onChange={set("confirm")}
-              placeholder="••••••••"
+              placeholder="Confirme sua senha"
               className="input py-3"
             />
           </div>
