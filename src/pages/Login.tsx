@@ -11,8 +11,6 @@ interface Props {
 export default function Login({ onLogin, onRegister }: Props) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [remember, setRemember] = useState(true)
-  const [forgotOpen, setForgotOpen] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -22,7 +20,7 @@ export default function Login({ onLogin, onRegister }: Props) {
     setLoading(true)
     try {
       const { token, user } = await login(email.trim(), password)
-      setToken(token, remember)
+      setToken(token)
       onLogin(user)
     } catch (err) {
       setError(err instanceof Error ? err.message : "E-mail ou senha inválidos.")
@@ -33,59 +31,41 @@ export default function Login({ onLogin, onRegister }: Props) {
 
   return (
     <AuthLayout>
-          <h2 className="text-3xl font-bold text-ink mb-2">Bem-vindo de volta</h2>
+          <h2 className="text-3xl font-bold text-ink mb-2">Seu controle começa aqui</h2>
           <p className="text-muted text-sm mb-8">
-            Tenha controle sobre seus gastos recorrentes.
+            Acompanhe suas assinaturas e organize seus gastos.
           </p>
 
           <form className="space-y-4" onSubmit={submit} noValidate>
+            
             <div>
-              <label className="label">E-mail</label>
+              <label htmlFor="login-email" className="label">
+                E-mail
+              </label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="admin@email.com"
+                placeholder="Digite seu e-mail"
+                autoComplete="email"
                 className="input py-3"
               />
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="label mb-0">Senha</label>
-                <button
-                  type="button"
-                  onClick={() => setForgotOpen(o => !o)}
-                  aria-expanded={forgotOpen}
-                  className="text-xs text-brand hover:underline underline-offset-4 font-medium"
-                >
-                  Esqueci minha senha
-                </button>
-              </div>
+              <label htmlFor="login-password" className="label">
+                Senha
+              </label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Digite sua senha"
+                autoComplete="current-password"
                 className="input py-3"
               />
-              {forgotOpen && (
-                <p className="mt-2 text-xs text-muted bg-sunken rounded-lg px-3 py-2.5">
-                  A recuperação de senha por e-mail ainda não está disponível. Se você está logado em
-                  outro aparelho, troque a senha em Configurações → Segurança.
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={remember}
-                onChange={e => setRemember(e.target.checked)}
-                className="w-4 h-4 accent-[var(--color-brand)] rounded"
-              />
-              <label htmlFor="remember" className="text-sm text-ink-2">Lembrar de mim</label>
             </div>
 
             {error && (
