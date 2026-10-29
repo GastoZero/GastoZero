@@ -1,8 +1,44 @@
-import type { BillingCycle, StoredSubscription, Subscription } from "../types"
+import type { BillingCycle, CurrencyCode, ExchangeRates, StoredSubscription, Subscription } from "../types"
 
-const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+export const CURRENCIES: { code: CurrencyCode; name: string }[] = [
+  { code: "BRL", name: "Real brasileiro" },
+  { code: "USD", name: "Dólar americano" },
+  { code: "EUR", name: "Euro" },
+  { code: "GBP", name: "Libra esterlina" },
+  { code: "JPY", name: "Iene japonês" },
+  { code: "CNY", name: "Yuan chinês" },
+]
 
-export const formatCurrency = (value: number) => currency.format(value)
+/** Valores de referência usados até a cotação do servidor chegar (ou se ela falhar). */
+export const FALLBACK_RATES: ExchangeRates = { BRL: 1, USD: 0.19, EUR: 0.17, GBP: 0.14, JPY: 29.5, CNY: 1.25 }
+
+const formatterFor = (code: CurrencyCode) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: code })
+
+export const currencySymbol = (code: CurrencyCode) =>
+  formatterFor(code).formatToParts(0).find(p => p.type === "currency")?.value ?? code
+
+/**
+ * Moeda de exibição do usuário logado. Todos os valores trafegam em BRL e são
+ * convertidos só na hora de mostrar; o App chama `setDisplayCurrency` ao renderizar.
+ */
+let display = { code: "BRL" as CurrencyCode, rate: 1, formatter: formatterFor("BRL") }
+
+export function setDisplayCurrency(code: CurrencyCode, rates: ExchangeRates) {
+  if (display.code === code && display.rate === rates[code]) return
+  display = { code, rate: rates[code] ?? 1, formatter: formatterFor(code) }
+}
+
+export const displayCurrency = () => display.code
+
+/** BRL → moeda de exibição. */
+export const toDisplay = (brl: number) => brl * display.rate
+
+/** Moeda de exibição → BRL (para salvar o que o usuário digitou). */
+export const fromDisplay = (value: number) => value / display.rate
+
+/** Recebe um valor em BRL e formata na moeda escolhida pelo usuário. */
+export const formatCurrency = (brl: number) => display.formatter.format(toDisplay(brl))
 
 /** Converte "YYYY-MM-DD" em Date local (evita o deslocamento de fuso do construtor ISO). */
 export function parseISODate(iso: string): Date | null {

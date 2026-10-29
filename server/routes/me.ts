@@ -2,6 +2,7 @@ import { Router } from "express"
 import bcrypt from "bcryptjs"
 import { requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { User, toPublicUser } from "../models/User.js"
+import { isCurrencyCode } from "../currencies.js"
 
 const router = Router()
 router.use(requireAuth)
@@ -12,7 +13,7 @@ router.patch("/", async (req: AuthRequest, res) => {
   const user = await User.findById(req.userId)
   if (!user) return res.status(401).json({ error: "Usuário não encontrado." })
 
-  const { name, email, notifications } = req.body ?? {}
+  const { name, email, notifications, currency } = req.body ?? {}
 
   if (name !== undefined) {
     if (typeof name !== "string" || !name.trim()) {
@@ -44,6 +45,11 @@ router.patch("/", async (req: AuthRequest, res) => {
       }
       user.set(`notifications.${key}`, notifications[key])
     }
+  }
+
+  if (currency !== undefined) {
+    if (!isCurrencyCode(currency)) return res.status(400).json({ error: "Moeda inválida." })
+    user.currency = currency
   }
 
   await user.save()

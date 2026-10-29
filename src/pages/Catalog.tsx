@@ -3,7 +3,17 @@ import { Search, X, Check, ArrowLeft, ChevronRight, Plus } from "lucide-react"
 import type { CatalogService, Page, StoredSubscription, Subscription } from "../types"
 import { CATEGORIES } from "../data/catalog"
 import { listCatalog } from "../lib/api"
-import { addMonths, cycleLabel, formatCurrency, monthlyCost, toISODate } from "../lib/format"
+import {
+  addMonths,
+  currencySymbol,
+  cycleLabel,
+  displayCurrency,
+  formatCurrency,
+  fromDisplay,
+  monthlyCost,
+  toDisplay,
+  toISODate,
+} from "../lib/format"
 import PageHeader from "../components/PageHeader"
 import ServiceMark from "../components/ServiceMark"
 
@@ -87,7 +97,7 @@ useEffect(() => {
   const openService = (service: CatalogService) => {
     setSelectedService(service)
     setSelectedPlan(0)
-    setPrice(service.plans[0].price.toFixed(2))
+    setPrice(toDisplay(service.plans[0].price).toFixed(2))
     setBillingDate(toISODate(addMonths(new Date(), 1)))
     setSuccess(false)
   }
@@ -95,7 +105,7 @@ useEffect(() => {
   const choosePlan = (index: number) => {
     if (!selectedService) return
     setSelectedPlan(index)
-    setPrice(selectedService.plans[index].price.toFixed(2))
+    setPrice(toDisplay(selectedService.plans[index].price).toFixed(2))
   }
 
   const handleAdd = async () => {
@@ -109,7 +119,7 @@ useEffect(() => {
         name: selectedService.name,
         plan: plan.label,
         category: selectedService.category,
-        price: Number.isFinite(parsed) && parsed > 0 ? parsed : plan.price,
+        price: Number.isFinite(parsed) && parsed > 0 ? fromDisplay(parsed) : plan.price,
         cycle: plan.cycle,
         nextBilling: billingDate || toISODate(addMonths(new Date(), 1)),
         status: "active",
@@ -162,7 +172,7 @@ const handleCustomAdd = async () => {
       name,
       plan,
       category: customCategory,
-      price: value,
+      price: fromDisplay(value),
       cycle: customCycle,
       nextBilling: customBillingDate,
       status: "active",
@@ -396,7 +406,7 @@ const handleCustomAdd = async () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="custom-price" className="label">
-                    Valor (R$)
+                    Valor ({currencySymbol(displayCurrency())})
                   </label>
                   <input
                     id="custom-price"
@@ -573,7 +583,7 @@ const handleCustomAdd = async () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="price" className="label">
-                        Valor (R$)
+                        Valor ({currencySymbol(displayCurrency())})
                       </label>
                       <input
                         id="price"

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import type { Page, StoredSubscription, Subscription, ThemePreference, UserProfile } from "./types"
-import { enrichSubscription } from "./lib/format"
+import type { ExchangeRates, Page, StoredSubscription, Subscription, ThemePreference, UserProfile } from "./types"
+import { enrichSubscription, FALLBACK_RATES, setDisplayCurrency } from "./lib/format"
 import { clearStoredState, usePersistentState } from "./lib/storage"
 import * as api from "./lib/api"
 import { useAppliedTheme } from "./lib/theme"
@@ -25,13 +25,23 @@ type AuthPage = "login" | "register"
 type Session = "checking" | "anon" | "error" | "ready"
 
 function toProfile(user: api.AuthUser): UserProfile {
-  return { name: user.name, email: user.email, role: user.role ?? "user", notifications: user.notifications }
+  return {
+    name: user.name,
+    email: user.email,
+    role: user.role ?? "user",
+    notifications: user.notifications,
+    currency: user.currency ?? "BRL",
+  }
 }
 
 export default function App() {
   const [session, setSession] = useState<Session>(() => (api.getToken() ? "checking" : "anon"))
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [stored, setStored] = useState<StoredSubscription[]>([])
+  const [rates, setRates] = useState<{ rates: ExchangeRates; updatedAt: string | null }>({
+    rates: FALLBACK_RATES,
+    updatedAt: null,
+  })
   const [theme, setTheme] = usePersistentState<ThemePreference>("theme", "system")
   const isDark = useAppliedTheme(theme)
   const [authPage, setAuthPage] = useState<AuthPage>("login")
@@ -69,6 +79,12 @@ export default function App() {
     if (api.getToken()) void loadSession()
     return () => api.setUnauthorizedHandler(null)
   }, [loadSession, logout])
+
+  // Cotação não bloqueia o login: se falhar, seguem os valores de referência.
+  useEffect(() => {
+    if (session !== "ready") return
+    api.fetchRates().then(setRates).catch(() => {})
+  }, [session])
 
   useEffect(() => {
     if (!error) return
@@ -109,6 +125,9 @@ export default function App() {
       <Register onRegister={onAuth} onLogin={() => setAuthPage("login")} />
     )
   }
+
+  // Precisa rodar antes dos filhos renderizarem para que `formatCurrency` já use a moeda certa.
+  setDisplayCurrency(profile.currency, rates.rates)
 
   const navigate = (p: Page) => {
     setPage(p)
@@ -161,6 +180,7 @@ export default function App() {
     <Settings
       profile={profile}
       onSaveProfile={saveProfile}
+      rates={rates}
       theme={theme}
       onThemeChange={setTheme}
       onLogout={logout}

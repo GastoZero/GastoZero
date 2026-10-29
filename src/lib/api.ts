@@ -3,6 +3,8 @@ import type {
   AdminStats,
   AdminUser,
   CatalogService,
+  CurrencyCode,
+  ExchangeRates,
   NotificationPrefs,
   StoredSubscription,
   UserRole,
@@ -14,6 +16,7 @@ export interface AuthUser {
   email: string
   role: UserRole
   notifications: NotificationPrefs
+  currency: CurrencyCode
 }
 
 export interface AuthResponse {
@@ -107,7 +110,7 @@ export function fetchMe() {
   return request<{ user: AuthUser }>("GET", "/auth/me")
 }
 
-export function updateMe(updates: Partial<Pick<AuthUser, "name" | "email" | "notifications">>) {
+export function updateMe(updates: Partial<Pick<AuthUser, "name" | "email" | "notifications" | "currency">>) {
   return request<{ user: AuthUser }>("PATCH", "/me", updates)
 }
 
@@ -133,6 +136,11 @@ export function deleteSubscription(id: string) {
 
 export function listCatalog() {
   return request<CatalogService[]>("GET", "/catalog")
+}
+
+/** `updatedAt` é null quando o servidor não conseguiu buscar a cotação e usou valores de referência. */
+export function fetchRates() {
+  return request<{ base: "BRL"; rates: ExchangeRates; updatedAt: string | null }>("GET", "/rates")
 }
 
 // Administração

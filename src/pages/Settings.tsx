@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { Lock, LogOut, ChevronRight } from "lucide-react"
-import type { NotificationPrefs, ThemePreference, UserProfile } from "../types"
+import type { CurrencyCode, ExchangeRates, NotificationPrefs, ThemePreference, UserProfile } from "../types"
 import { changePassword } from "../lib/api"
+import { CURRENCIES, currencySymbol } from "../lib/format"
 import PageHeader from "../components/PageHeader"
 import Switch from "../components/Switch"
 import ThemeSwitch from "../components/ThemeSwitch"
@@ -9,18 +10,21 @@ import ThemeSwitch from "../components/ThemeSwitch"
 interface Props {
   profile: UserProfile
   onSaveProfile: (updates: Partial<UserProfile>) => Promise<void>
+  rates: { rates: ExchangeRates; updatedAt: string | null }
   theme: ThemePreference
   onThemeChange: (t: ThemePreference) => void
   onLogout: () => void
 }
 
-export default function Settings({ profile, onSaveProfile, theme, onThemeChange, onLogout }: Props) {
+export default function Settings({ profile, onSaveProfile, rates, theme, onThemeChange, onLogout }: Props) {
   const [name, setName] = useState(profile.name)
   const [email, setEmail] = useState(profile.email)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [profileError, setProfileError] = useState("")
   const [notifError, setNotifError] = useState("")
+  const [currencyError, setCurrencyError] = useState("")
+  const [savingCurrency, setSavingCurrency] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
 
@@ -35,6 +39,29 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
       setNotifError(err instanceof Error ? err.message : "Não foi possível salvar a preferência.")
     }
   }
+
+  const changeCurrency = async (currency: CurrencyCode) => {
+    setCurrencyError("")
+    setSavingCurrency(true)
+    try {
+      await onSaveProfile({ currency })
+    } catch (err) {
+      setCurrencyError(err instanceof Error ? err.message : "Não foi possível salvar a moeda.")
+    } finally {
+      setSavingCurrency(false)
+    }
+  }
+
+  const rateLabel = (() => {
+    if (profile.currency === "BRL") return "Valores em reais, sem conversão."
+    const perUnit = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+      1 / rates.rates[profile.currency],
+    )
+    const when = rates.updatedAt
+      ? `cotação de ${new Date(rates.updatedAt).toLocaleDateString("pt-BR")}`
+      : "cotação de referência"
+    return `1 ${profile.currency} = ${perUnit} · ${when}`
+  })()
 
   const save = async () => {
     setProfileError("")
@@ -110,9 +137,26 @@ export default function Settings({ profile, onSaveProfile, theme, onThemeChange,
         )}
 
         <Section title="Preferências">
-          <Row label="Moeda" description="Moeda exibida nos valores">
-            <span className="num px-2.5 py-1 bg-sunken rounded-md text-sm text-ink-2">BRL · R$</span>
+          <Row label="Moeda" description={rateLabel}>
+            <select
+              aria-label="Moeda exibida nos valores"
+              value={profile.currency}
+              onChange={e => void changeCurrency(e.target.value as CurrencyCode)}
+              disabled={savingCurrency}
+              className="input num w-auto py-1.5 text-sm cursor-pointer"
+            >
+              {CURRENCIES.map(c => (
+                <option key={c.code} value={c.code}>
+                  {c.code} · {currencySymbol(c.code)} — {c.name}
+                </option>
+              ))}
+            </select>
           </Row>
+          {currencyError && (
+            <p role="alert" className="mt-3 text-sm text-danger bg-danger-soft rounded-lg px-3 py-2.5">
+              {currencyError}
+            </p>
+          )}
         </Section>
 
         <Section title="Segurança">

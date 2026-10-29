@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Search, Plus, MoreHorizontal, Pause, Play, Trash2, ArrowUpRight, Pencil } from "lucide-react"
 import type { Page, StoredSubscription, Subscription } from "../types"
-import { billingLabel, cycleLabel, formatCurrency } from "../lib/format"
+import { billingLabel, currencySymbol, cycleLabel, displayCurrency, formatCurrency, fromDisplay, toDisplay } from "../lib/format"
 import PageHeader from "../components/PageHeader"
 import ServiceMark from "../components/ServiceMark"
 
@@ -187,7 +187,7 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
                           label="Editar preço"
                           onClick={() => {
                             setEditingId(sub.id)
-                            setEditPrice(sub.price.toFixed(2).replace(".", ","))
+                            setEditPrice(toDisplay(sub.price).toFixed(2).replace(".", ","))
                             setEditError("")
                             setOpenMenu(null)
                           }}
@@ -277,7 +277,7 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
               }
 
               // Atualiza a assinatura
-              update(toEdit.id, { price: newPrice })
+              update(toEdit.id, { price: fromDisplay(newPrice) })
               setEditingId(null)
               setEditError("")
             }}
@@ -294,7 +294,7 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
               htmlFor="edit-subscription-price"
               className="block text-sm font-semibold text-ink mb-2"
             >
-              Novo valor (R$)
+              Novo valor ({currencySymbol(displayCurrency())})
             </label>
 
             <input

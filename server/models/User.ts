@@ -1,4 +1,5 @@
 import { Schema, model, type HydratedDocument, type InferSchemaType } from "mongoose"
+import { CURRENCY_CODES } from "../currencies.js"
 
 const userSchema = new Schema(
   {
@@ -11,6 +12,8 @@ const userSchema = new Schema(
       billing: { type: Boolean, default: true },
       renewal: { type: Boolean, default: true },
     },
+    /** Moeda de exibição. Os valores das assinaturas são sempre salvos em BRL. */
+    currency: { type: String, enum: CURRENCY_CODES, default: "BRL" },
   },
   { timestamps: true },
 )
@@ -29,5 +32,6 @@ export function toPublicUser(user: HydratedDocument<UserDoc>) {
       billing: user.notifications?.billing ?? true,
       renewal: user.notifications?.renewal ?? true,
     },
+    currency: user.currency ?? "BRL",
   }
 }

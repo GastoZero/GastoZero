@@ -66,11 +66,18 @@ export interface NotificationPrefs {
 
 export type UserRole = "user" | "admin"
 
+export type CurrencyCode = "BRL" | "USD" | "EUR" | "GBP" | "JPY" | "CNY"
+
+/** Quanto vale 1 BRL em cada moeda. */
+export type ExchangeRates = Record<CurrencyCode, number>
+
 export interface UserProfile {
   name: string
   email: string
   role: UserRole
   notifications: NotificationPrefs
+  /** Moeda de exibição; os valores são salvos em BRL e convertidos na tela. */
+  currency: CurrencyCode
 }
 
 /** Conta listada no painel do administrador. */
