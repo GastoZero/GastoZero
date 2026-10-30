@@ -1,6 +1,5 @@
-
 import { useState } from "react"
-import { Search, Pencil, X } from "lucide-react"
+import { Search, Pencil, X, ChevronDown } from "lucide-react"
 import * as api from "../../lib/api"
 import { useLoad } from "../../lib/useLoad"
 import PageHeader from "../../components/PageHeader"
@@ -16,6 +15,7 @@ const brl = new Intl.NumberFormat("pt-BR", {
 export default function AdminCatalog() {
   const { data, error, reload } = useLoad(api.listCatalog)
   const [search, setSearch] = useState("")
+  const [expandedServiceId, setExpandedServiceId] = useState<number | null>(null)
     
   const [editing, setEditing] = useState<{
     serviceId: number
@@ -122,95 +122,115 @@ export default function AdminCatalog() {
         {!data ? (
           <DataState error={error} />
         ) : (
-          <div className="card divide-y divide-line">
-            {filtered.map(service => (
-              <div
-                key={service.id}
-                className="p-4 md:p-5"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <ServiceMark
-                    name={service.name}
-                    color={service.color}
-                    size="md"
-                  />
+          <div className="card divide-y divide-line">            
+            {filtered.map(service => {
+              const expanded = expandedServiceId === service.id
 
-                  <div>
-                    <h3 className="font-semibold text-ink">
-                      {service.name}
-                    </h3>
-                    <p className="text-xs text-muted">
-                      {service.category}
-                    </p>
-                  </div>
-                </div>
+              return (
+                <div
+                  key={service.id}
+                  className="p-4 md:p-5"
+                >
+                  {/* Cabeçalho clicável do serviço */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedServiceId(
+                        expanded ? null : service.id
+                      )
+                    }
+                    aria-expanded={expanded}
+                    className="w-full flex items-center gap-3 text-left cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  >
+                    <ServiceMark
+                      name={service.name}
+                      color={service.color}
+                      size="md"
+                    />
 
-                <div className="space-y-2">
-                  {service.plans.map((plan, index) => (
-                    <div
-                      key={`${plan.label}-${plan.cycle}-${index}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-line p-3"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-ink">
-                          {plan.label}
-                        </p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-ink">
+                        {service.name}
+                      </h3>
 
-                        <p className="text-xs text-muted">
-                          Referência: {plan.priceUpdatedAt ?? "Não informada"}
-                        </p>
-                      </div>
+                      <p className="text-xs text-muted mt-0.5">
+                        {service.category} · {service.plans.length} {
+                          service.plans.length === 1 ? "plano" : "planos"
+                        }
+                      </p>
+                    </div>
 
-                      
-                        <div className="flex items-center gap-4">
-                        <div className="text-right">
-                            <p className="num font-semibold text-ink">
-                            {brl.format(plan.price)}
+                    <ChevronDown
+                      size={19}
+                      className={`text-muted transition-transform duration-200 ${
+                        expanded ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {/* Planos: aparecem somente quando expandido */}
+                  {expanded && (
+                    <div className="space-y-2 mt-4">
+                      {service.plans.map((plan, index) => (
+                        <div
+                          key={`${plan.label}-${plan.cycle}-${index}`}
+                          className="flex items-center justify-between gap-3 rounded-lg border border-line p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-ink">
+                              {plan.label}
                             </p>
 
                             <p className="text-xs text-muted">
-                            {plan.cycle === "monthly" ? "Mensal" : "Anual"}
+                              Referência: {plan.priceUpdatedAt ?? "Não informada"}
                             </p>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="num font-semibold text-ink">
+                                {brl.format(plan.price)}
+                              </p>
+
+                              <p className="text-xs text-muted">
+                                {plan.cycle === "monthly" ? "Mensal" : "Anual"}
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditing({
+                                  serviceId: service.id,
+                                  serviceName: service.name,
+                                  plan
+                                })
+
+                                setNewPrice(
+                                  plan.price.toFixed(2).replace(".", ",")
+                                )
+
+                                setSaveError("")
+                                setSuccessMessage("")
+                              }}
+                              className="btn-secondary px-3 py-2"
+                              aria-label={`Editar preço de ${service.name} - ${plan.label}`}
+                            >
+                              <Pencil size={15} />
+
+                              <span className="hidden sm:inline">
+                                Editar
+                              </span>
+                            </button>
+                          </div>
                         </div>
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                            setEditing({
-                                serviceId: service.id,
-                                serviceName: service.name,
-                                plan
-                            })
-
-                            setNewPrice(
-                                plan.price.toFixed(2).replace(".", ",")
-                            )
-
-                            setSaveError("")
-                            setSuccessMessage("")
-                            }}
-                            className="btn-secondary px-3 py-2"
-                            aria-label={`Editar preço de ${service.name} - ${plan.label}`}
-                        >
-                            <Pencil size={15} />
-                            <span className="hidden sm:inline">
-                            Editar
-                            </span>
-                        </button>
-                        </div>
-
-
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
-            {filtered.length === 0 && (
-              <p className="text-center p-8 text-muted text-sm">
-                Nenhum serviço encontrado.
-              </p>
-            )}
           </div>
         )}
       </div>

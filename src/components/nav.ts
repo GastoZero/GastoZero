@@ -20,17 +20,46 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
   ],
   
   admin: [
-    { label: "Usuários", short: "Usuários", page: "users", icon: Users },
-    { label: "Relatórios", short: "Relatórios", page: "reports", icon: BarChart3 },
-    { label: "Assinaturas", short: "Assinaturas", page: "admin-catalog", icon: CreditCard },
-    { label: "Administradores", short: "Admins", page: "admins", icon: ShieldCheck },
+    {
+      label: "Visão geral",
+      short: "Início",
+      page: "admin-overview",
+      icon: LayoutDashboard
+    },
+    {
+      label: "Usuários",
+      short: "Usuários",
+      page: "users",
+      icon: Users
+    },
+    {
+      label: "Relatórios",
+      short: "Relatórios",
+      page: "reports",
+      icon: BarChart3
+    },
+    {
+      label: "Assinaturas",
+      short: "Assinaturas",
+      page: "admin-catalog",
+      icon: CreditCard
+    },
+    {
+      label: "Administradores",
+      short: "Admins",
+      page: "admins",
+      icon: ShieldCheck
+    },
     SETTINGS,
   ],
 
 }
 
 /** Primeira tela de cada perfil após o login. */
-export const HOME_PAGE: Record<UserRole, Page> = { user: "dashboard", admin: "users" }
+export const HOME_PAGE: Record<UserRole, Page> = {
+  user: "dashboard",
+  admin: "admin-overview"
+}
 
 /** O catálogo é uma subpágina de Assinaturas: mantém o item destacado no menu. */
 export const navSection = (page: Page): Page => (page === "catalog" ? "subscriptions" : page)

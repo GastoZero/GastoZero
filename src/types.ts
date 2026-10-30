@@ -46,6 +46,7 @@ export type Page =
   | "reports"
   | "admin-catalog"
   | "admins"
+  | "admin-overview"
 
 export interface CatalogPlan {
   label: string

@@ -19,6 +19,7 @@ import Sidebar from "./components/Sidebar"
 import BottomNav from "./components/BottomNav"
 import { HOME_PAGE } from "./components/nav"
 import AdminCatalog from "./pages/admin/Catalog"
+import AdminOverview from "./pages/admin/Overview"
 
 type AuthPage = "login" | "register"
 
@@ -190,6 +191,7 @@ export default function App() {
 
   // O perfil define o menu e quais telas existem; o servidor também barra /api/admin para não-admins.
   const adminPages: Partial<Record<Page, React.ReactNode>> = {
+    "admin-overview": <AdminOverview navigate={navigate} />,
     users: <AdminUsers />,
     reports: <AdminReports isDark={isDark} />,
     "admin-catalog": <AdminCatalog />,
