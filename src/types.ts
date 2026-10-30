@@ -18,6 +18,11 @@ export interface StoredSubscription {
   color?: string
   /** Legado: emoji usado em versões anteriores. Não é mais exibido. */
   icon?: string
+  /** Identificador do serviço no catálogo oficial. */
+  catalogServiceId?: number | null
+  /** Define se o preço acompanha o catálogo ou é personalizado. */
+  priceMode?: "catalog" | "custom"
+
 }
 
 /** Assinatura enriquecida com os campos derivados usados na interface. */
@@ -39,6 +44,7 @@ export type Page =
   // Telas do administrador
   | "users"
   | "reports"
+  | "admin-catalog"
   | "admins"
 
 export interface CatalogPlan {

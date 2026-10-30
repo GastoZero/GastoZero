@@ -1,10 +1,11 @@
 import { Router } from "express"
 import bcrypt from "bcryptjs"
-import { isValidObjectId } from "mongoose"
+import mongoose, { isValidObjectId } from "mongoose"
 import { requireAdmin, requireAuth } from "../middleware/auth.js"
 import { User } from "../models/User.js"
 import { Subscription } from "../models/Subscription.js"
 import { monthlyCost } from "../../src/lib/format.js"
+import { Service } from "../models/Service.js"
 
 const router = Router()
 router.use(requireAuth, requireAdmin)
@@ -129,5 +130,109 @@ router.post("/admins", async (req, res) => {
   const admin = await User.create({ name: name.trim(), email: normalizedEmail, passwordHash, role: "admin" })
   res.status(201).json(summary(admin))
 })
+
+
+/**
+ * Atualiza o preço de um plano do catálogo oficial.
+ * Acesso exclusivo para administradores.
+ */
+
+router.patch("/catalog/:serviceId/price", async (req, res) => {
+  const serviceId = Number(req.params.serviceId)
+  const { label, cycle, price } = req.body ?? {}
+
+  if (!Number.isSafeInteger(serviceId) || serviceId <= 0) {
+    return res.status(400).json({
+      error: "Serviço inválido."
+    })
+  }
+
+  if (
+    typeof label !== "string" ||
+    !label.trim() ||
+    !["monthly", "yearly"].includes(cycle)
+  ) {
+    return res.status(400).json({
+      error: "Plano inválido."
+    })
+  }
+
+  if (
+    typeof price !== "number" ||
+    !Number.isFinite(price) ||
+    price < 0 ||
+    price > 999999 ||
+    Math.round(price * 100) !== price * 100 &&
+    Math.abs(Math.round(price * 100) - price * 100) > 0.000001
+  ) {
+    return res.status(400).json({
+      error: "Informe um preço válido."
+    })
+  }
+
+  const updatedAt = new Date().toISOString().slice(0, 10)
+
+  // A transação mantém catálogo e assinaturas sincronizados.
+  const result = await mongoose.connection.transaction(
+    async session => {
+
+      // 1. Atualiza o preço do plano oficial
+      const service = await Service.findOneAndUpdate(
+        {
+          id: serviceId,
+          plans: {
+            $elemMatch: { label, cycle }
+          }
+        },
+        {
+          $set: {
+            "plans.$.price": price,
+            "plans.$.priceUpdatedAt": updatedAt
+          }
+        },
+        {
+          new: true,
+          runValidators: true,
+          session
+        }
+      )
+        .select("id name category color plans -_id")
+        .lean()
+
+      if (!service) return null
+
+      // 2. Atualiza apenas assinaturas que seguem o catálogo
+      const sync = await Subscription.updateMany(
+        {
+          catalogServiceId: serviceId,
+          plan: label,
+          cycle,
+          priceMode: "catalog"
+        },
+        {
+          $set: { price }
+        },
+        { session }
+      )
+
+      return {
+        service,
+        subscriptionsUpdated: sync.modifiedCount
+      }
+    }
+  )
+
+  if (!result) {
+    return res.status(404).json({
+      error: "Serviço ou plano não encontrado."
+    })
+  }
+
+  res.json({
+    ...result.service,
+    subscriptionsUpdated: result.subscriptionsUpdated
+  })
+})
+
 
 export default router

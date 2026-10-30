@@ -112,14 +112,32 @@ useEffect(() => {
     if (!selectedService || saving) return
     const plan = selectedService.plans[selectedPlan]
     const parsed = Number(price.replace(",", "."))
+    // Preço original do catálogo na moeda exibida
+    const referencePrice = Number(
+      toDisplay(plan.price).toFixed(2)
+    )
+    // Preço informado pelo usuário
+    const enteredPrice =
+      Number.isFinite(parsed) && parsed >= 0
+        ? parsed
+        : referencePrice
+    // Identifica se o preço padrão foi mantido
+    const followsCatalog =
+      Math.abs(enteredPrice - referencePrice) < 0.005
+
 
     setSaving(true)
     try {
       await addSubscription({
         name: selectedService.name,
         plan: plan.label,
-        category: selectedService.category,
-        price: Number.isFinite(parsed) && parsed > 0 ? fromDisplay(parsed) : plan.price,
+        category: selectedService.category, 
+        price: followsCatalog
+          ? plan.price
+          : fromDisplay(enteredPrice),
+
+        catalogServiceId: selectedService.id,
+        priceMode: followsCatalog ? "catalog" : "custom",
         cycle: plan.cycle,
         nextBilling: billingDate || toISODate(addMonths(new Date(), 1)),
         status: "active",
@@ -176,7 +194,9 @@ const handleCustomAdd = async () => {
       cycle: customCycle,
       nextBilling: customBillingDate,
       status: "active",
-      color: "#0B7F45"
+      color: "#0B7F45",
+      catalogServiceId: null,
+      priceMode: "custom",
     })
 
     setCustomOpen(false)

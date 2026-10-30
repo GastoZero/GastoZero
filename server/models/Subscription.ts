@@ -7,6 +7,8 @@ const subscriptionSchema = new Schema(
     plan: { type: String, required: true, trim: true },
     category: { type: String, required: true, trim: true },
     price: { type: Number, required: true, min: 0 },
+    catalogServiceId: { type: Number, default: null},
+    priceMode: { type: String, enum: ["catalog", "custom"], default: "custom" },
     cycle: { type: String, enum: ["monthly", "yearly"], required: true },
     nextBilling: { type: String, required: true },
     status: { type: String, enum: ["active", "paused"], required: true, default: "active" },

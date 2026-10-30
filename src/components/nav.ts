@@ -18,12 +18,15 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Alertas", short: "Alertas", page: "alerts", icon: Bell },
     SETTINGS,
   ],
+  
   admin: [
     { label: "Usuários", short: "Usuários", page: "users", icon: Users },
     { label: "Relatórios", short: "Relatórios", page: "reports", icon: BarChart3 },
+    { label: "Assinaturas", short: "Assinaturas", page: "admin-catalog", icon: CreditCard },
     { label: "Administradores", short: "Admins", page: "admins", icon: ShieldCheck },
     SETTINGS,
   ],
+
 }
 
 /** Primeira tela de cada perfil após o login. */

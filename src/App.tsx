@@ -18,6 +18,7 @@ import AdminAdmins from "./pages/admin/Admins"
 import Sidebar from "./components/Sidebar"
 import BottomNav from "./components/BottomNav"
 import { HOME_PAGE } from "./components/nav"
+import AdminCatalog from "./pages/admin/Catalog"
 
 type AuthPage = "login" | "register"
 
@@ -191,9 +192,11 @@ export default function App() {
   const adminPages: Partial<Record<Page, React.ReactNode>> = {
     users: <AdminUsers />,
     reports: <AdminReports isDark={isDark} />,
+    "admin-catalog": <AdminCatalog />,
     admins: <AdminAdmins />,
     settings,
   }
+
 
   const userPages: Partial<Record<Page, React.ReactNode>> = {
     dashboard: <Dashboard subscriptions={subscriptions} profile={profile} navigate={navigate} isDark={isDark} />,

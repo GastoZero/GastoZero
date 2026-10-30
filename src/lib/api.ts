@@ -164,3 +164,19 @@ export function adminListAdmins() {
 export function adminCreateAdmin(data: { name: string; email: string; password: string }) {
   return request<AccountSummary>("POST", "/admin/admins", data)
 }
+
+export function adminUpdateCatalogPrice(
+  serviceId: number,
+  data: {
+    label: string
+    cycle: "monthly" | "yearly"
+    price: number
+  }
+) {
+  return request<CatalogService>(
+    "PATCH",
+    `/admin/catalog/${serviceId}/price`,
+    data
+  )
+}
+
