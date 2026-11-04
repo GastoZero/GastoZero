@@ -180,6 +180,39 @@ export const CATALOG: CatalogService[] = [
 ]
 
 /** Cor de marca de um serviço pelo nome, com fallback estável por hash. */
+/**
+ * Site oficial de cada serviço, usado para buscar o ícone (favicon) da marca.
+ * A chave é o nome em minúsculas, então também vale para assinaturas
+ * cadastradas manualmente com o mesmo nome. Serviços genéricos (academia,
+ * plano de celular, internet) ficam de fora e continuam com as iniciais.
+ */
+const SERVICE_DOMAINS: Record<string, string> = {
+  "netflix": "netflix.com",
+  "spotify": "spotify.com",
+  "icloud+": "icloud.com",
+  "youtube premium": "youtube.com",
+  "amazon prime": "primevideo.com",
+  "disney+": "disneyplus.com",
+  "max": "max.com",
+  "apple tv+": "tv.apple.com",
+  "globoplay": "globoplay.globo.com",
+  "deezer": "deezer.com",
+  "google one": "one.google.com",
+  "dropbox": "dropbox.com",
+  "microsoft 365": "microsoft365.com",
+  "canva pro": "canva.com",
+  "chatgpt plus": "chatgpt.com",
+  "duolingo super": "duolingo.com",
+  "playstation plus": "playstation.com",
+  "xbox game pass": "xbox.com",
+}
+
+/** URL do ícone oficial do serviço, ou null quando não há um site conhecido. */
+export function serviceLogoUrl(name: string): string | null {
+  const domain = SERVICE_DOMAINS[name.trim().toLowerCase()]
+  return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null
+}
+
 export function serviceColor(name: string, fallback?: string): string {
   if (fallback) return fallback
   const match = CATALOG.find(s => s.name.toLowerCase() === name.toLowerCase())
