@@ -12,14 +12,28 @@ function ensureDnsForSrv(uri: string) {
   else if (onlyLoopback) dns.setServers(["8.8.8.8", "1.1.1.1"])
 }
 
-export async function connectDB() {
+let connecting: Promise<typeof mongoose> | null = null
+
+/** Conecta uma vez e reaproveita a conexão (importante nas funções serverless). */
+export function connectDB() {
+  if (mongoose.connection.readyState === 1) return Promise.resolve(mongoose)
+  if (connecting) return connecting
+
   const uri = process.env.MONGODB_URI
-  if (!uri) throw new Error("MONGODB_URI não definida no .env")
+  if (!uri) return Promise.reject(new Error("MONGODB_URI não definida no .env"))
 
   ensureDnsForSrv(uri)
-
   mongoose.set("strictQuery", true)
-  await mongoose.connect(uri, { dbName: "gastozero" })
-  console.log("MongoDB conectado")
-  console.log("Banco em uso:", mongoose.connection.name)
+
+  connecting = mongoose
+    .connect(uri, { dbName: "gastozero", serverSelectionTimeoutMS: 10_000 })
+    .then(conn => {
+      console.log("MongoDB conectado — banco em uso:", conn.connection.name)
+      return conn
+    })
+    .catch(err => {
+      connecting = null // permite tentar de novo na próxima requisição
+      throw err
+    })
+  return connecting
 }

@@ -5,6 +5,8 @@ import { useLoad } from "../../lib/useLoad"
 import PageHeader from "../../components/PageHeader"
 import DataState from "../../components/DataState"
 import ServiceMark from "../../components/ServiceMark"
+import PriceInput from "../../components/PriceInput"
+import { cycleName, parsePriceInput } from "../../lib/format"
 import type { CatalogPlan } from "../../types"
 
 const brl = new Intl.NumberFormat("pt-BR", {
@@ -44,16 +46,9 @@ export default function AdminCatalog() {
 
     if (!editing || saving) return
 
-    const raw = newPrice.trim()
+    const price = parsePriceInput(newPrice)
 
-    if (!/^\d+(?:[.,]\d{1,2})?$/.test(raw)) {
-        setSaveError("Digite um preço válido. Ex.: 49,90")
-        return
-    }
-
-    const price = Number(raw.replace(",", "."))
-
-    if (!Number.isFinite(price) || price < 0 || price > 999999) {
+    if (price === null || price > 999999) {
         setSaveError("Informe um preço válido.")
         return
     }
@@ -193,7 +188,7 @@ export default function AdminCatalog() {
                               </p>
 
                               <p className="text-xs text-muted">
-                                {plan.cycle === "monthly" ? "Mensal" : "Anual"}
+                                {cycleName(plan.cycle)}
                               </p>
                             </div>
 
@@ -283,14 +278,11 @@ export default function AdminCatalog() {
                     Novo preço (R$)
                 </label>
 
-                <input
+                <PriceInput
                     id="admin-new-price"
-                    type="text"
-                    inputMode="decimal"
-                    className="input num"
                     value={newPrice}
-                    onChange={e => {
-                    setNewPrice(e.target.value)
+                    onChange={value => {
+                    setNewPrice(value)
                     setSaveError("")
                     }}
                     placeholder="Ex.: 49,90"

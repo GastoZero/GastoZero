@@ -147,9 +147,29 @@ npm run create-admin -- admin@gastozero.com minhaSenha123 "Nome do Admin"
 Se o e-mail já existir, a conta é promovida a admin e recebe a nova senha. Depois
 disso, um admin cadastra outros pela tela **Administradores**. O painel tem:
 
-- **Usuários**: lista dos usuários padrão com as assinaturas de cada um
+- **Usuários**: lista dos usuários padrão. Ao clicar em um usuário, o admin edita nome e e-mail, edita ou exclui assinaturas dele e pode excluir a conta (junto com as assinaturas)
 - **Relatórios**: gráficos gerais (gasto por categoria, serviços mais assinados) com exportação em CSV e PDF
 - **Administradores**: lista e cadastro de contas de admin
+
+---
+
+##  Deploy gratuito na Vercel
+
+O front (Vite) vira site estático e a API Express roda como função serverless
+em `api/index.ts`, que reaproveita o app de `server/app.ts`. O `vercel.json`
+manda todas as rotas `/api/*` para essa função. O plano **Hobby** da Vercel e o
+cluster **M0** do MongoDB Atlas são gratuitos.
+
+1. **MongoDB Atlas** → *Network Access* → *Add IP Address* → `0.0.0.0/0`
+   (as funções da Vercel não têm IP fixo).
+2. Suba o código para o GitHub e, em [vercel.com/new](https://vercel.com/new),
+   importe o repositório. O preset **Vite** é detectado sozinho.
+3. Em *Environment Variables*, cadastre `MONGODB_URI` e `JWT_SECRET`
+   (os mesmos do `.env`; `PORT` não é necessário).
+4. Clique em **Deploy**. Cada `git push` na `main` gera um deploy novo.
+
+Pelo terminal também funciona: `npx vercel` (pré-visualização) e
+`npx vercel --prod` (produção), depois de `npx vercel login`.
 
 ---
 
@@ -159,6 +179,15 @@ disso, um admin cadastra outros pela tela **Administradores**. O painel tem:
 GastoZero/
 ├── index.html                  # shell HTML com metadados e manifest
 ├── vite.config.ts              # React + Tailwind v4 + alias @
+├── vercel.json                 # build e rotas do deploy na Vercel
+├── api/index.ts                # função serverless (Vercel) que expõe a API
+├── server/
+│   ├── app.ts                  # app Express (rotas, sem listen)
+│   ├── index.ts                # servidor local (npm run server)
+│   ├── db.ts                   # conexão MongoDB reaproveitável
+│   ├── lib/subscriptionFields.ts # validação de assinaturas
+│   ├── models/ · routes/       # Mongoose e rotas REST
+│   └── scripts/                # create-admin e seed do catálogo
 ├── public/
 │   ├── manifest.webmanifest    # metadados de instalação do PWA
 │   ├── sw.js                   # service worker (cache offline)

@@ -6,6 +6,7 @@ import { User } from "../models/User.js"
 import { Subscription } from "../models/Subscription.js"
 import { monthlyCost } from "../../src/lib/format.js"
 import { Service } from "../models/Service.js"
+import { parseFields, updatesFor } from "../lib/subscriptionFields.js"
 
 const router = Router()
 router.use(requireAuth, requireAdmin)
@@ -60,11 +61,90 @@ router.get("/users", async (_req, res) => {
   res.json(users.map(u => ({ ...summary(u), ...(totals[u.id] ?? { subscriptions: 0, monthlyTotal: 0 }) })))
 })
 
+const USER_NOT_FOUND = { error: "Usuário não encontrado." }
+const SUB_NOT_FOUND = { error: "Assinatura não encontrada." }
+
+/** Usuário padrão pelo id da rota, ou null. Admins não são gerenciados por aqui. */
+async function findStandardUser(rawId: unknown) {
+  const id = String(rawId)
+  if (!isValidObjectId(id)) return null
+  return User.findOne({ _id: id, ...NOT_ADMIN })
+}
+
+router.patch("/users/:id", async (req, res) => {
+  const user = await findStandardUser(req.params.id)
+  if (!user) return res.status(404).json(USER_NOT_FOUND)
+
+  const { name, email } = req.body ?? {}
+
+  if (name !== undefined) {
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ error: "Nome é obrigatório." })
+    }
+    user.name = name.trim()
+  }
+
+  if (email !== undefined) {
+    if (typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
+      return res.status(400).json({ error: "E-mail inválido." })
+    }
+    const normalizedEmail = email.trim().toLowerCase()
+    if (normalizedEmail !== user.email) {
+      if (await User.exists({ email: normalizedEmail })) {
+        return res.status(409).json({ error: "Já existe uma conta com este e-mail." })
+      }
+      user.email = normalizedEmail
+    }
+  }
+
+  await user.save()
+  res.json(summary(user))
+})
+
+/** Exclui a conta e todas as assinaturas dela. */
+router.delete("/users/:id", async (req, res) => {
+  const user = await findStandardUser(req.params.id)
+  if (!user) return res.status(404).json(USER_NOT_FOUND)
+
+  await Subscription.deleteMany({ user: user._id })
+  await user.deleteOne()
+  res.status(204).end()
+})
+
 router.get("/users/:id/subscriptions", async (req, res) => {
-  const id = String(req.params.id)
-  if (!isValidObjectId(id)) return res.status(404).json({ error: "Usuário não encontrado." })
-  const subs = await Subscription.find({ user: id }).sort({ createdAt: 1 })
+  const user = await findStandardUser(req.params.id)
+  if (!user) return res.status(404).json(USER_NOT_FOUND)
+  const subs = await Subscription.find({ user: user._id }).sort({ createdAt: 1 })
   res.json(subs)
+})
+
+router.patch("/users/:id/subscriptions/:subId", async (req, res) => {
+  const subId = String(req.params.subId)
+  if (!isValidObjectId(subId)) return res.status(404).json(SUB_NOT_FOUND)
+  const user = await findStandardUser(req.params.id)
+  if (!user) return res.status(404).json(USER_NOT_FOUND)
+
+  const parsed = parseFields(req.body, true)
+  if ("error" in parsed) return res.status(400).json({ error: parsed.error })
+
+  const sub = await Subscription.findOneAndUpdate(
+    { _id: subId, user: user._id },
+    { $set: updatesFor(parsed.data) },
+    { new: true, runValidators: true },
+  )
+  if (!sub) return res.status(404).json(SUB_NOT_FOUND)
+  res.json(sub)
+})
+
+router.delete("/users/:id/subscriptions/:subId", async (req, res) => {
+  const subId = String(req.params.subId)
+  if (!isValidObjectId(subId)) return res.status(404).json(SUB_NOT_FOUND)
+  const user = await findStandardUser(req.params.id)
+  if (!user) return res.status(404).json(USER_NOT_FOUND)
+
+  const result = await Subscription.deleteOne({ _id: subId, user: user._id })
+  if (result.deletedCount === 0) return res.status(404).json(SUB_NOT_FOUND)
+  res.status(204).end()
 })
 
 /** Indicadores gerais considerando só as assinaturas ativas dos usuários padrão. */

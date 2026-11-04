@@ -78,23 +78,65 @@ export function formatShortDate(iso: string): string {
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
 }
 
-export const monthlyCost = (price: number, cycle: BillingCycle) =>
-  cycle === "yearly" ? price / 12 : price
+export function addDays(date: Date, days: number): Date {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
 
-export const cycleLabel = (cycle: BillingCycle) => (cycle === "yearly" ? "/ano" : "/mês")
+/** Semanas por mês em média (52 semanas / 12 meses). */
+const WEEKS_PER_MONTH = 52 / 12
+
+/** Periodicidades na ordem em que aparecem nos selects. */
+export const CYCLES: { value: BillingCycle; label: string }[] = [
+  { value: "weekly", label: "Semanal" },
+  { value: "monthly", label: "Mensal" },
+  { value: "yearly", label: "Anual" },
+]
+
+export const cycleName = (cycle: BillingCycle) => CYCLES.find(c => c.value === cycle)?.label ?? "Mensal"
+
+export const monthlyCost = (price: number, cycle: BillingCycle) =>
+  cycle === "yearly" ? price / 12 : cycle === "weekly" ? price * WEEKS_PER_MONTH : price
+
+export const cycleLabel = (cycle: BillingCycle) =>
+  cycle === "yearly" ? "/ano" : cycle === "weekly" ? "/sem" : "/mês"
+
+/** Data da cobrança seguinte, um ciclo depois de `date`. */
+export const nextCycleDate = (date: Date, cycle: BillingCycle) =>
+  cycle === "weekly" ? addDays(date, 7) : addMonths(date, cycle === "yearly" ? 12 : 1)
+
+/**
+ * Limpa o que foi digitado num campo de valor: só dígitos e uma vírgula,
+ * com no máximo duas casas decimais (centavos).
+ */
+export function sanitizePriceInput(value: string): string {
+  const [int, ...rest] = value.replace(/[^\d,]/g, "").split(",")
+  return rest.length ? `${int},${rest.join("").slice(0, 2)}` : int
+}
+
+/** "29,90" → 29.9. Devolve null se o texto não for um valor válido. */
+export function parsePriceInput(value: string): number | null {
+  const raw = value.trim()
+  if (!/^\d+(,\d{1,2})?$/.test(raw)) return null
+  const n = Number(raw.replace(",", "."))
+  return Number.isFinite(n) ? n : null
+}
+
+/** 29.9 → "29,90", no formato aceito pelos campos de valor. */
+export const formatPriceInput = (value: number) => value.toFixed(2).replace(".", ",")
 
 /**
  * Rola a data de cobrança para frente até cair no futuro e adiciona os campos
  * derivados usados nas telas.
  */
 export function enrichSubscription(sub: StoredSubscription, today = new Date()): Subscription {
-  const step = sub.cycle === "yearly" ? 12 : 1
   let date = parseISODate(sub.nextBilling)
 
   if (date) {
     let guard = 0
-    while (daysBetween(today, date) < 0 && guard < 240) {
-      date = addMonths(date, step)
+    while (daysBetween(today, date) < 0 && guard < 1000) {
+      date = nextCycleDate(date, sub.cycle)
       guard++
     }
   }

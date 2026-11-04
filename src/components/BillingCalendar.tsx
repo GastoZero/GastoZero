@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { Subscription } from "../types"
-import { addMonths, formatCurrency, parseISODate, toISODate } from "../lib/format"
+import { addDays, addMonths, cycleName, daysBetween, formatCurrency, parseISODate, toISODate } from "../lib/format"
 import { serviceColor } from "../data/catalog"
 import ServiceMark from "./ServiceMark"
 
@@ -30,6 +30,19 @@ function chargesInMonth(subscriptions: Subscription[], year: number, month: numb
     if (sub.status !== "active") continue
     const anchor = parseISODate(sub.nextBilling)
     if (!anchor) continue
+
+    if (sub.cycle === "weekly") {
+      // Começa na primeira cobrança (anterior ou posterior à âncora) que cai no mês.
+      const offset = daysBetween(anchor, new Date(year, month, 1))
+      let date = addDays(anchor, Math.ceil(offset / 7) * 7)
+      while (date.getMonth() === month && date.getFullYear() === year) {
+        const list = byDay.get(date.getDate()) ?? []
+        list.push({ sub, amount: sub.price })
+        byDay.set(date.getDate(), list)
+        date = addDays(date, 7)
+      }
+      continue
+    }
 
     const step = sub.cycle === "yearly" ? 12 : 1
     // Distância em meses entre a âncora e o mês exibido.
@@ -177,7 +190,7 @@ export default function BillingCalendar({ subscriptions }: Props) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-ink truncate">{sub.name}</p>
                   <p className="text-xs text-muted truncate">
-                    {sub.plan} · {sub.cycle === "yearly" ? "anual" : "mensal"}
+                    {sub.plan} · {cycleName(sub.cycle).toLowerCase()}
                   </p>
                 </div>
                 <p className="num text-sm font-semibold text-ink">{formatCurrency(amount)}</p>

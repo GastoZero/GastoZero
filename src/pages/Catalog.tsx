@@ -1,20 +1,24 @@
 import { useEffect, useMemo, useState } from "react"
 import { Search, X, Check, ArrowLeft, ChevronRight, Plus } from "lucide-react"
-import type { CatalogService, Page, StoredSubscription, Subscription } from "../types"
+import type { BillingCycle, CatalogService, Page, StoredSubscription, Subscription } from "../types"
 import { CATEGORIES } from "../data/catalog"
 import { listCatalog } from "../lib/api"
 import {
+  CYCLES,
   addMonths,
   currencySymbol,
   cycleLabel,
   displayCurrency,
   formatCurrency,
+  formatPriceInput,
   fromDisplay,
   monthlyCost,
+  parsePriceInput,
   toDisplay,
   toISODate,
 } from "../lib/format"
 import PageHeader from "../components/PageHeader"
+import PriceInput from "../components/PriceInput"
 import ServiceMark from "../components/ServiceMark"
 
 interface Props {
@@ -37,9 +41,11 @@ export default function Catalog({ subscriptions, addSubscription, navigate }: Pr
   const [customOpen, setCustomOpen] = useState(false)
   const [customName, setCustomName] = useState("")
   const [customCategory, setCustomCategory] = useState("Outros")
+  /** Nome da categoria digitado quando o usuário escolhe "Outros". */
+  const [customCategoryName, setCustomCategoryName] = useState("")
   const [customPlan, setCustomPlan] = useState("Personalizado")
   const [customPrice, setCustomPrice] = useState("")
-  const [customCycle, setCustomCycle] = useState<"monthly" | "yearly">("monthly")
+  const [customCycle, setCustomCycle] = useState<BillingCycle>("monthly")
   const [customBillingDate, setCustomBillingDate] = useState(
     () => toISODate(addMonths(new Date(), 1))
   )
@@ -97,7 +103,7 @@ useEffect(() => {
   const openService = (service: CatalogService) => {
     setSelectedService(service)
     setSelectedPlan(0)
-    setPrice(toDisplay(service.plans[0].price).toFixed(2))
+    setPrice(formatPriceInput(toDisplay(service.plans[0].price)))
     setBillingDate(toISODate(addMonths(new Date(), 1)))
     setSuccess(false)
   }
@@ -105,22 +111,19 @@ useEffect(() => {
   const choosePlan = (index: number) => {
     if (!selectedService) return
     setSelectedPlan(index)
-    setPrice(toDisplay(selectedService.plans[index].price).toFixed(2))
+    setPrice(formatPriceInput(toDisplay(selectedService.plans[index].price)))
   }
 
   const handleAdd = async () => {
     if (!selectedService || saving) return
     const plan = selectedService.plans[selectedPlan]
-    const parsed = Number(price.replace(",", "."))
+    const parsed = parsePriceInput(price)
     // Preço original do catálogo na moeda exibida
     const referencePrice = Number(
       toDisplay(plan.price).toFixed(2)
     )
     // Preço informado pelo usuário
-    const enteredPrice =
-      Number.isFinite(parsed) && parsed >= 0
-        ? parsed
-        : referencePrice
+    const enteredPrice = parsed ?? referencePrice
     // Identifica se o preço padrão foi mantido
     const followsCatalog =
       Math.abs(enteredPrice - referencePrice) < 0.005
@@ -163,22 +166,17 @@ const handleCustomAdd = async () => {
 
   const name = customName.trim()
   const plan = customPlan.trim()
-  const rawPrice = customPrice.trim()
+  const category = customCategory === "Outros" ? customCategoryName.trim() : customCategory
 
-  if (!name || !plan || !customBillingDate) {
+  if (!name || !plan || !category || !customBillingDate) {
     setCustomError("Preencha todos os campos obrigatórios.")
     return
   }
 
-  if (!/^\d+(?:[.,]\d{1,2})?$/.test(rawPrice)) {
-    setCustomError("Digite um preço válido. Ex.: 29,90")
-    return
-  }
+  const value = parsePriceInput(customPrice)
 
-  const value = Number(rawPrice.replace(",", "."))
-
-  if (!Number.isFinite(value) || value < 0) {
-    setCustomError("Informe um preço válido.")
+  if (value === null) {
+    setCustomError("Digite um valor válido. Ex.: 29,90")
     return
   }
 
@@ -189,7 +187,7 @@ const handleCustomAdd = async () => {
     await addSubscription({
       name,
       plan,
-      category: customCategory,
+      category,
       price: fromDisplay(value),
       cycle: customCycle,
       nextBilling: customBillingDate,
@@ -405,6 +403,24 @@ const handleCustomAdd = async () => {
                 </select>
               </div>
 
+              {customCategory === "Outros" && (
+                <div>
+                  <label htmlFor="custom-category-name" className="label">
+                    Qual é a categoria?
+                  </label>
+                  <input
+                    id="custom-category-name"
+                    type="text"
+                    value={customCategoryName}
+                    onChange={e => setCustomCategoryName(e.target.value)}
+                    placeholder="Ex.: Lazer, Educação, Transporte"
+                    className="input"
+                    maxLength={40}
+                    required
+                  />
+                </div>
+              )}
+
               {/* Plano */}
               <div>
                 <label htmlFor="custom-plan" className="label">
@@ -428,16 +444,7 @@ const handleCustomAdd = async () => {
                   <label htmlFor="custom-price" className="label">
                     Valor ({currencySymbol(displayCurrency())})
                   </label>
-                  <input
-                    id="custom-price"
-                    type="text"
-                    inputMode="decimal"
-                    value={customPrice}
-                    onChange={e => setCustomPrice(e.target.value)}
-                    placeholder="29,90"
-                    className="input num"
-                    required
-                  />
+                  <PriceInput id="custom-price" value={customPrice} onChange={setCustomPrice} required />
                 </div>
 
                 <div>
@@ -447,13 +454,14 @@ const handleCustomAdd = async () => {
                   <select
                     id="custom-cycle"
                     value={customCycle}
-                    onChange={e =>
-                      setCustomCycle(e.target.value as "monthly" | "yearly")
-                    }
+                    onChange={e => setCustomCycle(e.target.value as BillingCycle)}
                     className="input"
                   >
-                    <option value="monthly">Mensal</option>
-                    <option value="yearly">Anual</option>
+                    {CYCLES.map(c => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -581,7 +589,7 @@ const handleCustomAdd = async () => {
                             <span className="num text-sm text-ink-2 text-right">
                               {formatCurrency(plan.price)}
                               <span className="text-muted">{cycleLabel(plan.cycle)}</span>
-                              {plan.cycle === "yearly" && (
+                              {plan.cycle !== "monthly" && (
                                 <span className="block text-[11px] text-muted">
                                   ≈ {formatCurrency(monthlyCost(plan.price, plan.cycle))}/mês
                                 </span>
@@ -605,15 +613,7 @@ const handleCustomAdd = async () => {
                       <label htmlFor="price" className="label">
                         Valor ({currencySymbol(displayCurrency())})
                       </label>
-                      <input
-                        id="price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={price}
-                        onChange={e => setPrice(e.target.value)}
-                        className="input num"
-                      />
+                      <PriceInput id="price" value={price} onChange={setPrice} />
                     </div>
                     <div>
                       <label htmlFor="billing" className="label">

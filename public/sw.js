@@ -1,5 +1,5 @@
 // Service worker do GastoZero (PWA): app shell offline + cache de assets.
-const CACHE = "gastozero-v1"
+const CACHE = "gastozero-v2"
 const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icons/icon.svg"]
 
 self.addEventListener("install", (event) => {
@@ -19,7 +19,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event
-  if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return
+  const url = new URL(request.url)
+  if (request.method !== "GET" || url.origin !== self.location.origin) return
+  // Dados da API sempre vêm da rede: cache aqui mostraria informações desatualizadas.
+  if (url.pathname.startsWith("/api/")) return
 
   // Navegação: rede primeiro, com fallback para o app shell em cache (offline).
   if (request.mode === "navigate") {

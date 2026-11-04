@@ -2,6 +2,7 @@ import type {
   AccountSummary,
   AdminStats,
   AdminUser,
+  BillingCycle,
   CatalogService,
   CurrencyCode,
   ExchangeRates,
@@ -153,6 +154,22 @@ export function adminUserSubscriptions(userId: string) {
   return request<StoredSubscription[]>("GET", `/admin/users/${userId}/subscriptions`)
 }
 
+export function adminUpdateUser(userId: string, updates: { name?: string; email?: string }) {
+  return request<AccountSummary>("PATCH", `/admin/users/${userId}`, updates)
+}
+
+export function adminDeleteUser(userId: string) {
+  return request<null>("DELETE", `/admin/users/${userId}`)
+}
+
+export function adminUpdateUserSubscription(userId: string, subId: string, updates: Partial<SubscriptionInput>) {
+  return request<StoredSubscription>("PATCH", `/admin/users/${userId}/subscriptions/${subId}`, updates)
+}
+
+export function adminDeleteUserSubscription(userId: string, subId: string) {
+  return request<null>("DELETE", `/admin/users/${userId}/subscriptions/${subId}`)
+}
+
 export function adminStats() {
   return request<AdminStats>("GET", "/admin/stats")
 }
@@ -169,7 +186,7 @@ export function adminUpdateCatalogPrice(
   serviceId: number,
   data: {
     label: string
-    cycle: "monthly" | "yearly"
+    cycle: BillingCycle
     price: number
   }
 ) {

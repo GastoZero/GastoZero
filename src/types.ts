@@ -1,4 +1,4 @@
-export type BillingCycle = "monthly" | "yearly"
+export type BillingCycle = "weekly" | "monthly" | "yearly"
 
 export type SubscriptionStatus = "active" | "paused"
 
@@ -27,7 +27,7 @@ export interface StoredSubscription {
 
 /** Assinatura enriquecida com os campos derivados usados na interface. */
 export interface Subscription extends StoredSubscription {
-  /** Custo normalizado por mês (planos anuais são divididos por 12). */
+  /** Custo normalizado por mês (anual ÷ 12, semanal × 52/12). */
   monthlyPrice: number
   daysUntil: number
   /** Próxima cobrança formatada como dd/mm. */

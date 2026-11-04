@@ -1,8 +1,19 @@
 import { useState } from "react"
 import { Search, Plus, MoreHorizontal, Pause, Play, Trash2, ArrowUpRight, Pencil } from "lucide-react"
 import type { Page, StoredSubscription, Subscription } from "../types"
-import { billingLabel, currencySymbol, cycleLabel, displayCurrency, formatCurrency, fromDisplay, toDisplay } from "../lib/format"
+import {
+  billingLabel,
+  currencySymbol,
+  cycleLabel,
+  displayCurrency,
+  formatCurrency,
+  formatPriceInput,
+  fromDisplay,
+  parsePriceInput,
+  toDisplay,
+} from "../lib/format"
 import PageHeader from "../components/PageHeader"
+import PriceInput from "../components/PriceInput"
 import ServiceMark from "../components/ServiceMark"
 
 interface Props {
@@ -167,7 +178,7 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
                         {fmt(sub.price)}
                         <span className="text-xs text-muted font-normal">{cycleLabel(sub.cycle)}</span>
                       </p>
-                      {sub.cycle === "yearly" && (
+                      {sub.cycle !== "monthly" && (
                         <p className="num text-[11px] text-muted">{fmt(sub.monthlyPrice)}/mês</p>
                       )}
                     </div>
@@ -187,7 +198,7 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
                           label="Editar preço"
                           onClick={() => {
                             setEditingId(sub.id)
-                            setEditPrice(toDisplay(sub.price).toFixed(2).replace(".", ","))
+                            setEditPrice(formatPriceInput(toDisplay(sub.price)))
                             setEditError("")
                             setOpenMenu(null)
                           }}
@@ -260,19 +271,9 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
             onSubmit={e => {
               e.preventDefault()
 
-              const raw = editPrice.trim()
-
-              // Valida se o usuário digitou um preço válido
-              if (!/^\d+(?:[.,]\d{1,2})?$/.test(raw)) {
+              const newPrice = parsePriceInput(editPrice)
+              if (newPrice === null) {
                 setEditError("Digite um valor válido. Ex.: 15,90")
-                return
-              }
-
-              // Converte o valor para número
-              const newPrice = Number(raw.replace(",", "."))
-
-              if (!Number.isFinite(newPrice) || newPrice < 0) {
-                setEditError("O valor não pode ser negativo.")
                 return
               }
 
@@ -297,16 +298,14 @@ export default function Subscriptions({ subscriptions, update, remove, navigate 
               Novo valor ({currencySymbol(displayCurrency())})
             </label>
 
-            <input
+            <PriceInput
               id="edit-subscription-price"
-              type="text"
-              inputMode="decimal"
               value={editPrice}
-              onChange={e => {
-                setEditPrice(e.target.value)
+              onChange={value => {
+                setEditPrice(value)
                 setEditError("")
               }}
-              className="input mb-2"
+              className="input num mb-2"
               placeholder="Ex.: 15,90"
               autoFocus
             />

@@ -1,4 +1,5 @@
 import { Schema, model, Types, type InferSchemaType } from "mongoose"
+import { CYCLES } from "../lib/subscriptionFields.js"
 
 const subscriptionSchema = new Schema(
   {
@@ -9,7 +10,7 @@ const subscriptionSchema = new Schema(
     price: { type: Number, required: true, min: 0 },
     catalogServiceId: { type: Number, default: null},
     priceMode: { type: String, enum: ["catalog", "custom"], default: "custom" },
-    cycle: { type: String, enum: ["monthly", "yearly"], required: true },
+    cycle: { type: String, enum: CYCLES, required: true },
     nextBilling: { type: String, required: true },
     status: { type: String, enum: ["active", "paused"], required: true, default: "active" },
     /** Cor da marca do serviço (hex), vinda do catálogo. */
