@@ -1,5 +1,6 @@
 
-import { serviceColor } from "../data/catalog"
+import { useState } from "react"
+import { serviceColor, serviceLogoUrl } from "../data/catalog"
 
 interface Props {
   name: string
@@ -19,6 +20,10 @@ export default function ServiceMark({
   size = "md",
 }: Props) {
   const originalColor = serviceColor(name, color)
+  const logoUrl = serviceLogoUrl(name)
+  // Guarda a URL que falhou: se o nome mudar, a nova tenta carregar de novo.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const showLogo = logoUrl !== null && failedUrl !== logoUrl
 
   // Mistura a cor original com o fundo neutro.
   const softBackground = `color-mix(in srgb, ${originalColor} 25%, var(--color-sunken))`
@@ -33,6 +38,25 @@ export default function ServiceMark({
     .map(w => w[0])
     .join("")
     .toUpperCase()
+
+  if (showLogo) {
+    // Fundo branco: os ícones das marcas são feitos para fundo claro.
+    return (
+      <span
+        aria-hidden="true"
+        className={`${SIZES[size]} flex-shrink-0 inline-flex items-center justify-center overflow-hidden border border-line bg-white`}
+      >
+        <img
+          src={logoUrl}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setFailedUrl(logoUrl)}
+          className="w-[62%] h-[62%] object-contain"
+        />
+      </span>
+    )
+  }
 
   return (
     <span
