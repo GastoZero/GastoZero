@@ -1,4 +1,4 @@
-# 💸 GastoZero
+#  GastoZero
 
 > **Controle e conscientização financeira de gastos recorrentes e serviços por assinatura.**
 
@@ -13,7 +13,7 @@ Aplicação Web Progressiva (PWA)
 
 ---
 
-## 📌 O problema
+##  O problema
 
 Assinaturas são cobranças pequenas, automáticas e fáceis de esquecer. Somadas,
 viram um rombo silencioso no orçamento: R$ 20 aqui, R$ 60 ali — e no fim do ano
@@ -22,7 +22,7 @@ o valor passa de mil reais sem que a pessoa perceba.
 Os apps de finanças tradicionais exigem cadastro manual de cada despesa, o que
 faz a maioria dos usuários desistir na primeira semana.
 
-## 💡 A solução
+##  A solução
 
 O **GastoZero** elimina a burocracia do cadastro manual. A aplicação já vem com
 um **catálogo global de serviços e planos com preços embutidos**: o usuário só
@@ -32,21 +32,21 @@ simular quanto economizaria ao cancelar ou pausar cada assinatura.
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 | Funcionalidade | Descrição |
 | --- | --- |
-| 🗂️ **Catálogo inteligente** | 21 serviços pré-cadastrados (Netflix, Spotify, iCloud+, academia, plano de celular…) com planos e preços. O valor é preenchido automaticamente ao selecionar o plano. |
-| 🧮 **Cálculo automático** | Impacto mensal e projeção anual atualizados em tempo real. Planos anuais são normalizados para custo mensal equivalente. |
-| 🔔 **Alertas de cobrança** | Vencimentos agrupados por urgência (hoje, 3 dias, 14 dias, futuras), com datas calculadas dinamicamente e renovação automática de ciclo. |
-| 📊 **Dashboard analítico** | Gráfico de rosca por categoria e gráfico de barras com a projeção acumulada dos próximos 12 meses. |
-| 💰 **Simulador de economia** | Marque assinaturas candidatas a cancelamento e veja economia mensal, anual e o percentual de redução no orçamento. |
-| ⏸️ **Gestão de assinaturas** | Pausar, retomar e cancelar serviços, com busca e filtros por categoria. |
-| 📱 **Experiência PWA** | Instalável no celular como app nativo, com service worker e funcionamento offline — sem passar por loja de aplicativos. |
+|  **Catálogo inteligente** | 21 serviços pré-cadastrados (Netflix, Spotify, iCloud+, academia, plano de celular…) com planos e preços. O valor é preenchido automaticamente ao selecionar o plano. |
+|  **Cálculo automático** | Impacto mensal e projeção anual atualizados em tempo real. Planos anuais são normalizados para custo mensal equivalente. |
+|  **Alertas de cobrança** | Vencimentos agrupados por urgência (hoje, 3 dias, 14 dias, futuras), com datas calculadas dinamicamente e renovação automática de ciclo. |
+|  **Dashboard analítico** | Gráfico de rosca por categoria e gráfico de barras com a projeção acumulada dos próximos 12 meses. |
+|  **Simulador de economia** | Marque assinaturas candidatas a cancelamento e veja economia mensal, anual e o percentual de redução no orçamento. |
+|  **Gestão de assinaturas** | Pausar, retomar e cancelar serviços, com busca e filtros por categoria. |
+|  **Experiência PWA** | Instalável no celular como app nativo, com service worker e funcionamento offline — sem passar por loja de aplicativos. |
 
 ---
 
-## 🖥️ Telas
+##  Telas
 
 | Tela | O que mostra |
 | --- | --- |
@@ -60,7 +60,7 @@ simular quanto economizaria ao cancelar ou pausar cada assinatura.
 
 ---
 
-## 🏗️ Arquitetura
+##  Arquitetura
 
 ```mermaid
 flowchart TD
@@ -81,7 +81,7 @@ em uma API REST.
 
 ---
 
-## 🧰 Tecnologias
+##  Tecnologias
 
 | Camada | Tecnologia | Finalidade |
 | --- | --- | --- |
@@ -95,7 +95,7 @@ em uma API REST.
 
 ---
 
-## 🚀 Como executar
+##  Como executar
 
 **Requisitos:** Node.js 20 ou superior.
 
@@ -109,7 +109,7 @@ npm install
 npm run dev:all
 ```
 
-> ℹ️ Se a API falhar com `querySrv ECONNREFUSED` ao conectar no MongoDB Atlas,
+>  Se a API falhar com `querySrv ECONNREFUSED` ao conectar no MongoDB Atlas,
 > o Node não está achando o DNS da rede. O servidor já tenta DNS públicos
 > automaticamente; para usar outros, defina `DNS_SERVERS=8.8.8.8,1.1.1.1` no `.env`.
 
@@ -121,11 +121,11 @@ npm run build        # typecheck + build de produção em dist/
 npm run preview      # serve o build — necessário para testar o PWA
 ```
 
-> ℹ️ O service worker só é registrado no build de produção. Para instalar o app
+>  O service worker só é registrado no build de produção. Para instalar o app
 > no celular ou testar o modo offline, use `npm run build` seguido de
 > `npm run preview`.
 
-### 🔑 Acesso de demonstração
+###  Acesso de demonstração
 
 | Campo | Valor |
 | --- | --- |
@@ -135,7 +135,7 @@ npm run preview      # serve o build — necessário para testar o PWA
 Credenciais definidas em `src/pages/Login.tsx` enquanto não há backend de
 autenticação.
 
-### 🛡️ Painel do administrador
+###  Painel do administrador
 
 Não existe botão de "entrar como admin": o login é o mesmo, e o que diferencia é
 o e-mail, que no banco tem `role: "admin"`. Para criar o primeiro administrador:
@@ -153,7 +153,7 @@ disso, um admin cadastra outros pela tela **Administradores**. O painel tem:
 
 ---
 
-## 📁 Estrutura do projeto
+##  Estrutura do projeto
 
 ```
 GastoZero/
@@ -180,7 +180,7 @@ GastoZero/
 
 ---
 
-## 🗄️ Dados
+##  Dados
 
 Os dados são salvos no `localStorage` do navegador com o prefixo `gastozero:`
 (assinaturas, perfil e sessão). Sair da conta em **Configurações** limpa esses
@@ -191,7 +191,7 @@ ajustados conforme as tabelas oficiais vigentes de cada serviço.
 
 ---
 
-## 🛣️ Próximos passos
+##  Próximos passos
 
 - [ ] API REST em Node.js (Express ou Fastify) para autenticação e regras de negócio
 - [ ] Persistência em MongoDB (usuários, assinaturas e catálogo global)
