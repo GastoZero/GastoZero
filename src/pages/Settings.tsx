@@ -209,7 +209,6 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
     try {
       await changePassword(form.current, form.next)
       setDone(true)
-      setTimeout(onClose, 1200)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível alterar a senha.")
     } finally {
@@ -221,31 +220,44 @@ function PasswordModal({ onClose }: { onClose: () => void }) {
     <div className="modal-backdrop">
       <form onSubmit={submit} noValidate className="card p-6 max-w-sm w-full shadow-2xl space-y-3">
         <h3 className="font-bold text-ink text-xl mb-1">Alterar senha</h3>
-        <div>
-          <label htmlFor="current-password" className="label">Senha atual</label>
-          <input id="current-password" type="password" autoComplete="current-password" value={form.current} onChange={set("current")} className="input" />
-        </div>
-        <div>
-          <label htmlFor="new-password" className="label">Nova senha</label>
-          <input id="new-password" type="password" autoComplete="new-password" value={form.next} onChange={set("next")} className="input" />
-        </div>
-        <div>
-          <label htmlFor="confirm-password" className="label">Confirmar nova senha</label>
-          <input id="confirm-password" type="password" autoComplete="new-password" value={form.confirm} onChange={set("confirm")} className="input" />
-        </div>
-        {error && (
-          <p role="alert" className="text-sm text-danger bg-danger-soft rounded-lg px-3 py-2.5">
-            {error}
-          </p>
+        {done ? (
+          <>
+            <p role="status" aria-live="polite" className="text-sm font-medium text-brand">
+              Senha alterada com sucesso.
+            </p>
+            <button type="button" onClick={onClose} className="btn-primary w-full">
+              Fechar
+            </button>
+          </>
+        ) : (
+          <>
+            <div>
+              <label htmlFor="current-password" className="label">Senha atual</label>
+              <input id="current-password" type="password" autoComplete="current-password" value={form.current} onChange={set("current")} className="input" />
+            </div>
+            <div>
+              <label htmlFor="new-password" className="label">Nova senha</label>
+              <input id="new-password" type="password" autoComplete="new-password" value={form.next} onChange={set("next")} className="input" />
+            </div>
+            <div>
+              <label htmlFor="confirm-password" className="label">Confirmar nova senha</label>
+              <input id="confirm-password" type="password" autoComplete="new-password" value={form.confirm} onChange={set("confirm")} className="input" />
+            </div>
+            {error && (
+              <p role="alert" className="text-sm text-danger bg-danger-soft rounded-lg px-3 py-2.5">
+                {error}
+              </p>
+            )}
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={onClose} className="btn-secondary flex-1">
+                Cancelar
+              </button>
+              <button type="submit" disabled={loading} className="btn-primary flex-1">
+                {loading ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </>
         )}
-        <div className="flex gap-2 pt-2">
-          <button type="button" onClick={onClose} className="btn-secondary flex-1">
-            Cancelar
-          </button>
-          <button type="submit" disabled={loading || done} className="btn-primary flex-1">
-            {done ? "Senha alterada" : loading ? "Salvando..." : "Salvar"}
-          </button>
-        </div>
       </form>
     </div>
   )
