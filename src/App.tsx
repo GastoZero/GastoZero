@@ -20,6 +20,7 @@ import BottomNav from "./components/BottomNav"
 import { HOME_PAGE } from "./components/nav"
 import AdminCatalog from "./pages/admin/Catalog"
 import AdminOverview from "./pages/admin/Overview"
+import Reports from "./pages/Reports"
 
 type AuthPage = "login" | "register"
 
@@ -218,6 +219,7 @@ export default function App() {
       />
     ),
     simulator: <Simulator subscriptions={subscriptions} navigate={navigate} />,
+    reports: <Reports subscriptions={subscriptions} navigate={navigate} isDark={isDark} />,
     alerts: <Alerts subscriptions={subscriptions} navigate={navigate} />,
     settings,
   }

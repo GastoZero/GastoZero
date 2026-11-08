@@ -15,6 +15,7 @@ export const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     { label: "Visão geral", short: "Início", page: "dashboard", icon: LayoutDashboard },
     { label: "Assinaturas", short: "Assinaturas", page: "subscriptions", icon: CreditCard },
     { label: "Simulador", short: "Simulador", page: "simulator", icon: Calculator },
+    { label: "Relatórios", short: "Relatórios", page: "reports", icon: BarChart3 },
     { label: "Alertas", short: "Alertas", page: "alerts", icon: Bell },
     SETTINGS,
   ],
