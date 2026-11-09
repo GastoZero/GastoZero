@@ -12,7 +12,7 @@ This is the canonical project structure. Start with task-relevant files below. O
 
 - `src/main.tsx` - React entrypoint; imports `src/index.css`, mounts `src/App.tsx` and registers the service worker in production
 - `src/App.tsx` - Global state (subscriptions, profile, navigation) and persistence
-- `src/pages/` - Login, Register, Dashboard, Subscriptions, Catalog, Simulator, Alerts, Settings
+- `src/pages/` - Login, Register, Dashboard, Subscriptions, Catalog, Simulator, Reports, Alerts, Settings
 - `src/components/` - `Sidebar` (desktop), `BottomNav` (mobile) and shared UI such as `PriceInput` (money field: digits and one comma only)
 - `server/app.ts` - Express app (routes, no `listen`); `server/index.ts` runs it locally and `api/index.ts` exposes it as the Vercel serverless function
 - `server/lib/subscriptionFields.ts` - Subscription validation shared by the user and admin routes
