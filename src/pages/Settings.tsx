@@ -78,7 +78,7 @@ export default function Settings({ profile, onSaveProfile, rates, theme, onTheme
   }
 
   return (
-    <div className="min-h-full pb-24 md:pb-10">
+    <div className="min-h-full pb-10">
       <PageHeader eyebrow="Conta" title="Configurações" />
 
       <div className="px-4 md:px-10 max-w-2xl space-y-4">

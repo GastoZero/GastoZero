@@ -64,3 +64,30 @@ export const HOME_PAGE: Record<UserRole, Page> = {
 
 /** O catálogo é uma subpágina de Assinaturas: mantém o item destacado no menu. */
 export const navSection = (page: Page): Page => (page === "catalog" ? "subscriptions" : page)
+
+/** Subpáginas que não aparecem no menu, com a tela "mãe" e o rótulo usado no breadcrumb. */
+const SUBPAGES: Partial<Record<Page, { parent: Page; label: string }>> = {
+  catalog: { parent: "subscriptions", label: "Nova assinatura" },
+}
+
+export interface Crumb {
+  page: Page
+  label: string
+}
+
+const pageLabel = (page: Page, role: UserRole): string =>
+  SUBPAGES[page]?.label ?? NAV_ITEMS[role].find(item => item.page === page)?.label ?? ""
+
+/** Caminho da tela inicial até a página atual, ex.: Visão geral › Assinaturas › Nova assinatura. */
+export function breadcrumb(page: Page, role: UserRole): Crumb[] {
+  const chain: Page[] = []
+  for (let p: Page | undefined = page; p; p = SUBPAGES[p]?.parent) chain.unshift(p)
+  if (chain[0] !== HOME_PAGE[role]) chain.unshift(HOME_PAGE[role])
+  return chain.map(p => ({ page: p, label: pageLabel(p, role) }))
+}
+
+/** Para onde o botão "voltar" leva: a tela mãe, ou a inicial. `null` quando já está na inicial. */
+export function backTarget(page: Page, role: UserRole): Page | null {
+  if (page === HOME_PAGE[role]) return null
+  return SUBPAGES[page]?.parent ?? HOME_PAGE[role]
+}

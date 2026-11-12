@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { Search, X, Check, ArrowLeft, ChevronRight, Plus } from "lucide-react"
+import { Search, X, Check, ChevronRight, Plus } from "lucide-react"
 import type { BillingCycle, CatalogService, Page, StoredSubscription, Subscription } from "../types"
 import { CATEGORIES } from "../data/catalog"
 import { listCatalog } from "../lib/api"
@@ -207,17 +207,7 @@ const handleCustomAdd = async () => {
 }
 
   return (
-    <div className="min-h-full pb-24 md:pb-10">
-      <div className="px-4 md:px-10 pt-5 md:pt-8">
-        <button
-          onClick={() => navigate("subscriptions")}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink transition-colors cursor-pointer"
-        >
-          <ArrowLeft size={15} />
-          Assinaturas
-        </button>
-      </div>
-
+    <div className="min-h-full pb-10">
       <PageHeader
         eyebrow="Catálogo"
         title="Nova assinatura"

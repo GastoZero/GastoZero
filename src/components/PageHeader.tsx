@@ -8,7 +8,7 @@ interface Props {
 
 export default function PageHeader({ eyebrow, title, description, actions, children }: Props) {
   return (
-    <header className="px-4 md:px-10 pt-6 md:pt-10 pb-5">
+    <header className="px-4 md:px-10 pt-5 md:pt-8 pb-5">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div className="min-w-0">
           {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}

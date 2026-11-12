@@ -73,8 +73,8 @@ export default function Dashboard({ subscriptions, profile, navigate, isDark }: 
   const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })
 
   return (
-    <div className="min-h-full pb-24 md:pb-10">
-      <header className="px-4 md:px-10 pt-6 md:pt-10 pb-6 flex items-end justify-between gap-4">
+    <div className="min-h-full pb-10">
+      <header className="px-4 md:px-10 pt-5 md:pt-8 pb-6 flex items-end justify-between gap-4">
         <div>
           <p className="eyebrow mb-2">{today}</p>
           <h1 className="text-[1.75rem] md:text-[2.1rem] font-bold text-ink leading-[1.1]">Olá, {firstName}.</h1>

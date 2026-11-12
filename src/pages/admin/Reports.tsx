@@ -16,7 +16,7 @@ export default function Reports({ isDark }: { isDark: boolean }) {
   const chart = chartTheme(isDark)
 
   return (
-    <div className="min-h-full pb-24 md:pb-10">
+    <div className="min-h-full pb-10">
       <PageHeader
         eyebrow="Administração"
         title="Relatórios"

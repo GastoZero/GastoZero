@@ -196,7 +196,7 @@ export default function Reports({ subscriptions, navigate, isDark }: Props) {
   }
 
   return (
-    <div className="min-h-full pb-24 md:pb-10">
+    <div className="min-h-full pb-10">
       <PageHeader
         eyebrow="Análise"
         title="Relatórios"

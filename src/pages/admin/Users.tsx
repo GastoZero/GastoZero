@@ -35,7 +35,7 @@ export default function Users() {
   const selected = data?.find(u => u.id === selectedId) ?? null
 
   return (
-    <div className="min-h-full pb-24 md:pb-10">
+    <div className="min-h-full pb-10">
       <PageHeader
         eyebrow="Administração"
         title="Usuários"

@@ -33,7 +33,7 @@ export default function Alerts({ subscriptions, navigate }: Props) {
   const dismiss = (id: string) => setDismissed(prev => new Set([...prev, id]))
 
   return (
-    <div className="min-h-full pb-24 md:pb-10">
+    <div className="min-h-full pb-10">
       <PageHeader
         eyebrow="Calendário"
         title="Alertas"

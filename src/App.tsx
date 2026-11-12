@@ -16,7 +16,7 @@ import AdminUsers from "./pages/admin/Users"
 import AdminReports from "./pages/admin/Reports"
 import AdminAdmins from "./pages/admin/Admins"
 import Sidebar from "./components/Sidebar"
-import BottomNav from "./components/BottomNav"
+import TopBar from "./components/TopBar"
 import { HOME_PAGE } from "./components/nav"
 import AdminCatalog from "./pages/admin/Catalog"
 import AdminOverview from "./pages/admin/Overview"
@@ -239,9 +239,9 @@ export default function App() {
         onThemeChange={setTheme}
       />
       <main className="flex-1 md:ml-64 overflow-y-auto print:ml-0 print:overflow-visible">
+        <TopBar currentPage={page} navigate={navigate} profile={profile} alertCount={upcomingAlerts} />
         {pages[page]}
       </main>
-      <BottomNav currentPage={page} navigate={navigate} alertCount={upcomingAlerts} role={profile.role} />
       {error && (
         <div
           role="alert"

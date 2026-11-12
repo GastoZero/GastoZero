@@ -31,7 +31,7 @@ export default function Simulator({ subscriptions, navigate }: Props) {
     })
 
   return (
-    <div className="min-h-full pb-24 md:pb-10">
+    <div className="min-h-full pb-10">
       <PageHeader
         eyebrow="E se..."
         title="Simulador de cortes"
